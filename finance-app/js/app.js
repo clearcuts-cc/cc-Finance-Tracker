@@ -165,31 +165,59 @@ class App {
 
         // Mobile menu
         const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+
         mobileMenuBtn.addEventListener('click', () => {
-            document.getElementById('sidebar').classList.toggle('mobile-open');
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('mobile-open');
+            if (sidebarOverlay) {
+                sidebarOverlay.classList.toggle('active');
+            }
         });
 
         // Close mobile menu on link click
         document.querySelectorAll('.nav-link').forEach(link => {
             link.addEventListener('click', () => {
-                if (window.innerWidth <= 992) {
+                if (window.innerWidth <= 768) {
                     document.getElementById('sidebar').classList.remove('mobile-open');
+                    if (sidebarOverlay) {
+                        sidebarOverlay.classList.remove('active');
+                    }
                 }
             });
         });
+
+        // Close mobile menu on overlay click
+        if (sidebarOverlay) {
+            sidebarOverlay.addEventListener('click', () => {
+                document.getElementById('sidebar').classList.remove('mobile-open');
+                sidebarOverlay.classList.remove('active');
+            });
+        }
 
         // Close mobile menu on outside click
         document.addEventListener('click', (e) => {
             const sidebar = document.getElementById('sidebar');
             const mobileBtn = document.getElementById('mobileMenuBtn');
 
-            if (window.innerWidth <= 992 &&
+            if (window.innerWidth <= 768 &&
                 !sidebar.contains(e.target) &&
                 !mobileBtn.contains(e.target) &&
                 sidebar.classList.contains('mobile-open')) {
                 sidebar.classList.remove('mobile-open');
+                if (sidebarOverlay) {
+                    sidebarOverlay.classList.remove('active');
+                }
             }
         });
+
+        // Header avatar click - navigate to profile
+        const headerAvatar = document.getElementById('headerAvatar');
+        if (headerAvatar) {
+            headerAvatar.addEventListener('click', () => {
+                this.navigateTo('profile');
+            });
+        }
     }
 
     /**

@@ -27,6 +27,9 @@
 
 <body>
     <div class="app-container">
+        <!-- Sidebar Overlay for Mobile -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
         <!-- Sidebar Navigation -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
@@ -174,7 +177,7 @@
                         <input type="text" placeholder="Search..." id="globalSearch">
                     </div>
                     <div class="user-profile">
-                        <div class="avatar">
+                        <div class="avatar" id="headerAvatar" style="cursor: pointer;" title="Go to Profile">
                             <span>CA</span>
                         </div>
                     </div>
