@@ -199,9 +199,11 @@ class DataLayerAPI {
     }
 
     async getAllEntries() {
+        const userId = await this.getCurrentUserId();
         const { data, error } = await supabaseClient
             .from('finance_entries')
             .select('*')
+            .eq('user_id', userId)
             .order('date', { ascending: false });
 
         if (error) this.handleError(error, 'Get all entries');
@@ -209,7 +211,8 @@ class DataLayerAPI {
     }
 
     async getFilteredEntries(filters = {}) {
-        let query = supabaseClient.from('finance_entries').select('*');
+        const userId = await this.getCurrentUserId();
+        let query = supabaseClient.from('finance_entries').select('*').eq('user_id', userId);
 
         if (filters.startDate) {
             query = query.gte('date', filters.startDate);
@@ -280,9 +283,11 @@ class DataLayerAPI {
     }
 
     async getMonthlyData(year) {
+        const userId = await this.getCurrentUserId();
         const { data, error } = await supabaseClient
             .from('finance_entries')
             .select('*')
+            .eq('user_id', userId)
             .gte('date', `${year}-01-01`)
             .lte('date', `${year}-12-31`);
 
@@ -471,9 +476,11 @@ class DataLayerAPI {
     }
 
     async getAllInvoices() {
+        const userId = await this.getCurrentUserId();
         const { data, error } = await supabaseClient
             .from('invoices')
             .select('*, invoice_services(*)')
+            .eq('user_id', userId)
             .order('created_at', { ascending: false });
 
         if (error) this.handleError(error, 'Get all invoices');
@@ -481,9 +488,11 @@ class DataLayerAPI {
     }
 
     async getNextInvoiceNumber() {
+        const userId = await this.getCurrentUserId();
         const { data, error } = await supabaseClient
             .from('invoices')
             .select('invoice_number')
+            .eq('user_id', userId)
             .order('created_at', { ascending: false })
             .limit(1);
 
@@ -551,9 +560,11 @@ class DataLayerAPI {
     }
 
     async getAllClients() {
+        const userId = await this.getCurrentUserId();
         const { data, error } = await supabaseClient
             .from('clients')
             .select('*')
+            .eq('user_id', userId)
             .order('name', { ascending: true });
 
         if (error) this.handleError(error, 'Get all clients');
@@ -636,13 +647,24 @@ class DataLayerAPI {
     }
 
     async clearAll() {
-        // This is a destructive operation - should be used carefully
-        console.warn('Clear all data requested');
+        // This is a destructive operation - only clears current user's data
+        const userId = await this.getCurrentUserId();
+        console.warn('Clear all data requested for user:', userId);
 
-        await supabaseClient.from('invoice_services').delete().neq('id', 0);
-        await supabaseClient.from('invoices').delete().neq('id', 0);
-        await supabaseClient.from('finance_entries').delete().neq('id', 0);
-        await supabaseClient.from('clients').delete().neq('id', 0);
+        // Get user's invoices to delete their services
+        const { data: userInvoices } = await supabaseClient
+            .from('invoices')
+            .select('id')
+            .eq('user_id', userId);
+
+        if (userInvoices && userInvoices.length > 0) {
+            const invoiceIds = userInvoices.map(inv => inv.id);
+            await supabaseClient.from('invoice_services').delete().in('invoice_id', invoiceIds);
+        }
+
+        await supabaseClient.from('invoices').delete().eq('user_id', userId);
+        await supabaseClient.from('finance_entries').delete().eq('user_id', userId);
+        await supabaseClient.from('clients').delete().eq('user_id', userId);
 
         this.notifyListeners(DATA_STORES.ENTRIES);
         this.notifyListeners(DATA_STORES.INVOICES);
