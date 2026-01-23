@@ -157,12 +157,6 @@ class ProfileManager {
         if (fName) fName.value = this.currentUser.name || '';
         if (fEmail) fEmail.value = this.currentUser.email || '';
         if (fPhone) fPhone.value = this.currentUser.phone || '';
-
-        // Reset Password Fields
-        const pCurrent = document.getElementById('pageCurrentPassword');
-        const pNew = document.getElementById('pageNewPassword');
-        if (pCurrent) pCurrent.value = '';
-        if (pNew) pNew.value = '';
     }
 
     /**
@@ -210,16 +204,7 @@ class ProfileManager {
      */
     async saveProfile() {
         const name = document.getElementById('pageProfileName').value;
-        const email = document.getElementById('pageProfileEmail').value;
         const phone = document.getElementById('pageProfilePhone').value;
-        const currentPassword = document.getElementById('pageCurrentPassword').value;
-        const newPassword = document.getElementById('pageNewPassword').value;
-
-        if (newPassword && !currentPassword) {
-            showToast('Current password required to set new password', 'warning');
-            document.getElementById('pageCurrentPassword').focus();
-            return;
-        }
 
         try {
             showToast('Updating profile...', 'info');
@@ -233,10 +218,9 @@ class ProfileManager {
             // Update user profile in users table
             const updateData = { name, phone };
 
-            // Note: Avatar upload to Supabase storage would require additional setup
-            // For now, we skip avatar updates to avoid payload issues
+            // Include avatar if changed
             if (this.avatarBase64) {
-                showToast('Note: Avatar update temporarily disabled.', 'info');
+                updateData.avatar = this.avatarBase64;
             }
 
             const { error: updateError } = await supabaseClient
@@ -248,38 +232,12 @@ class ProfileManager {
                 throw updateError;
             }
 
-            // Update password if provided
-            if (newPassword && currentPassword) {
-                // First verify current password by re-authenticating
-                const { error: signInError } = await supabaseClient.auth.signInWithPassword({
-                    email: this.currentUser.email,
-                    password: currentPassword
-                });
-
-                if (signInError) {
-                    showToast('Current password is incorrect', 'error');
-                    return;
-                }
-
-                // Now update to new password
-                const { error: passwordError } = await supabaseClient.auth.updateUser({
-                    password: newPassword
-                });
-
-                if (passwordError) {
-                    showToast('Failed to update password: ' + passwordError.message, 'error');
-                    return;
-                }
-
-                showToast('Password updated successfully', 'success');
-            }
-
             showToast('Profile updated successfully', 'success');
 
             // Update local state
             this.currentUser = { ...this.currentUser, name, phone };
 
-            // Keep local avatar preview
+            // Update avatar in local state
             if (this.avatarBase64) {
                 this.currentUser.avatar = this.avatarBase64;
             }
@@ -290,9 +248,7 @@ class ProfileManager {
             this.updateHeaderAvatar();
             this.renderProfilePage();
 
-            // Clear password fields
-            document.getElementById('pageCurrentPassword').value = '';
-            document.getElementById('pageNewPassword').value = '';
+            // Reset avatar state
             this.avatarBase64 = null;
 
         } catch (error) {

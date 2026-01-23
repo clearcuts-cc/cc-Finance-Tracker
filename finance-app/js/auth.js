@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.session) {
                     // Ensure user profile exists in users table
                     const userProfile = await ensureUserProfile(data.user);
-                    
+
                     // Store user info in localStorage for quick access
                     localStorage.setItem('user', JSON.stringify({
                         id: data.user.id,
@@ -108,6 +108,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const password = document.getElementById('password').value;
 
             try {
+                // First check if email already exists in users table
+                const { data: existingUser } = await supabaseClient
+                    .from('users')
+                    .select('email')
+                    .eq('email', email)
+                    .maybeSingle();
+
+                if (existingUser) {
+                    showError('This email is already registered. Please login instead.');
+                    setLoading(false);
+                    return;
+                }
+
                 const { data, error } = await supabaseClient.auth.signUp({
                     email,
                     password,
@@ -125,15 +138,38 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
+                // Check if user already exists in Supabase Auth
+                // Supabase returns a user with empty identities array if email exists
+                if (data.user && data.user.identities && data.user.identities.length === 0) {
+                    showError('This email is already registered. Please login instead.');
+                    setLoading(false);
+                    return;
+                }
+
+                // Also check if we got a session (means user already verified)
+                // or if user object exists but no confirmation was sent
+                if (data.user && !data.session && data.user.email_confirmed_at) {
+                    showError('This email is already registered. Please login instead.');
+                    setLoading(false);
+                    return;
+                }
+
                 if (data.user) {
                     // Create user profile in users table
-                    await supabaseClient.from('users').insert({
+                    const { error: insertError } = await supabaseClient.from('users').insert({
                         id: data.user.id,
                         name: name,
                         email: email,
-                        role: 'user',
+                        role: 'admin',
                         is_verified: false
                     });
+
+                    // If insert fails due to duplicate, user already exists
+                    if (insertError && insertError.code === '23505') {
+                        showError('This email is already registered. Please login instead.');
+                        setLoading(false);
+                        return;
+                    }
 
                     // Show verification modal
                     if (verificationModal) {
