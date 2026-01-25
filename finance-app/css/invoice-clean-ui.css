@@ -1,0 +1,188 @@
+/* ==================== Invoice Clean UI & Form Improvements ==================== */
+
+.invoice-form-section {
+    background: var(--color-bg-card);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-xl) !important;
+    /* Increased padding */
+    box-shadow: var(--shadow-sm);
+    margin-bottom: var(--spacing-xl);
+    border: 1px solid var(--color-border);
+}
+
+.invoice-form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-xl);
+    padding-bottom: var(--spacing-lg);
+    border-bottom: 1px solid var(--color-border-light);
+}
+
+.invoice-form-header h2 {
+    font-size: var(--font-size-xl);
+    font-weight: 700;
+    color: var(--color-text-primary);
+}
+
+.form-section {
+    margin-bottom: var(--spacing-2xl) !important;
+    /* More space between sections */
+}
+
+.form-section h4 {
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-lg);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.form-section h4::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--color-border-light);
+    margin-left: var(--spacing-md);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: var(--spacing-lg) !important;
+    /* Increased grid gap */
+    margin-bottom: var(--spacing-lg);
+}
+
+.form-row.three-col {
+    grid-template-columns: repeat(3, 1fr) !important;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: var(--spacing-xs);
+    font-weight: 500;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 0.75rem 1rem !important;
+    /* Better padding */
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-primary);
+    /* Slight contrast background */
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+    transition: all var(--transition-fast);
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-light);
+    background: var(--color-bg-card);
+    outline: none;
+}
+
+/* Services Table - Clean Look */
+.services-table-wrapper {
+    background: var(--color-bg-primary);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+    overflow: hidden;
+    margin-bottom: var(--spacing-md);
+}
+
+.services-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.services-table th {
+    background: var(--color-bg-tertiary);
+    padding: var(--spacing-sm) var(--spacing-md) !important;
+    text-align: left;
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    letter-spacing: 0.05em;
+}
+
+.services-table td {
+    padding: var(--spacing-sm) var(--spacing-md) !important;
+    border-bottom: 1px solid var(--color-border-light);
+}
+
+.services-table tr:last-child td {
+    border-bottom: none;
+}
+
+.services-table input {
+    border: 1px solid transparent !important;
+    background: transparent !important;
+    padding: var(--spacing-sm) !important;
+    box-shadow: none !important;
+}
+
+.services-table input:hover {
+    background: var(--color-bg-card) !important;
+    border-color: var(--color-border-light) !important;
+}
+
+.services-table input:focus {
+    background: var(--color-bg-card) !important;
+    border-color: var(--color-primary) !important;
+    box-shadow: 0 0 0 2px var(--color-primary-light) !important;
+}
+
+/* Totals Section */
+.totals-section {
+    background: var(--color-bg-tertiary);
+    /* Contrast */
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg) !important;
+    margin-top: var(--spacing-lg);
+}
+
+.totals-grid {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--spacing-sm);
+    margin-left: auto;
+    width: 300px;
+}
+
+.total-row {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+}
+
+.total-row.grand-total {
+    margin-top: var(--spacing-md);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--color-border);
+    font-weight: 700;
+    font-size: var(--font-size-xl);
+    color: var(--color-text-primary);
+}
+
+@media (max-width: 768px) {
+
+    .form-row,
+    .form-row.three-col {
+        grid-template-columns: 1fr !important;
+    }
+}

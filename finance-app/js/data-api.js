@@ -654,6 +654,7 @@ class DataLayerAPI {
 
     async addInvoice(invoice) {
         const userId = await this.getCurrentUserId();
+        const adminId = await this.getAdminId(); // Fix: Define adminId
         const { services, ...invoiceData } = invoice;
         const dbInvoice = toDbInvoice(invoiceData);
 
@@ -795,25 +796,25 @@ class DataLayerAPI {
     }
 
     async getNextInvoiceNumber() {
-        const userId = await this.getCurrentUserId();
-        const { data, error } = await supabaseClient
-            .from('invoices')
-            .select('invoice_number')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: false })
-            .limit(1);
+        try {
+            const adminId = await this.getAdminId();
+            // Call the database function to get the next strictly sequential number
+            const { data, error } = await supabaseClient.rpc('get_next_invoice_number', {
+                org_admin_id: adminId
+            });
 
-        if (error || !data || data.length === 0) {
-            return 'INV-001';
-        }
+            if (error) {
+                console.error('Error fetching next invoice number:', error);
+                return 'INV-0001';
+            }
 
-        const lastNumber = data[0].invoice_number;
-        const match = lastNumber.match(/INV-(\d+)/);
-        if (match) {
-            const nextNum = parseInt(match[1]) + 1;
-            return `INV-${String(nextNum).padStart(3, '0')}`;
+            // Format as INV-0001 (padding to 4 digits)
+            const num = data || 1;
+            return `INV-${String(num).padStart(4, '0')}`;
+        } catch (e) {
+            console.error('Failed to get next invoice number:', e);
+            return 'INV-0001';
         }
-        return 'INV-001';
     }
 
     // ==================== Clients ====================

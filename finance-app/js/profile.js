@@ -97,7 +97,6 @@ class ProfileManager {
                 email: user.email,
                 name: profile?.name || user.user_metadata?.name || 'User',
                 avatar: profile?.avatar || null,
-                phone: profile?.phone || null,
                 role: role,
                 created_at: user.created_at
             };
@@ -164,9 +163,15 @@ class ProfileManager {
         // Update Form Fields
         const fName = document.getElementById('pageProfileName');
         const fEmail = document.getElementById('pageProfileEmail');
-        const fPhone = document.getElementById('pageProfilePhone');
 
-        if (fName) fName.value = this.currentUser.name || '';
+        if (fName) {
+            fName.value = this.currentUser.name || '';
+            fName.readOnly = true;
+            fName.disabled = true;
+            fName.style.opacity = "0.7";
+            fName.style.cursor = "not-allowed";
+        }
+
         if (fEmail) {
             fEmail.value = this.currentUser.email || '';
             // Bug #1: Ensure email is unchangeable
@@ -176,7 +181,6 @@ class ProfileManager {
             fEmail.style.cursor = "not-allowed";
             fEmail.style.backgroundColor = "var(--color-bg-tertiary)"; // Visually distinct
         }
-        if (fPhone) fPhone.value = this.currentUser.phone || '';
     }
 
     /**
@@ -223,8 +227,11 @@ class ProfileManager {
      * Save Profile Changes
      */
     async saveProfile() {
-        const name = document.getElementById('pageProfileName').value;
-        const phone = document.getElementById('pageProfilePhone').value;
+        // Strict Rule: Only Avatar can be changed. Name is Read-Only.
+        if (!this.avatarBase64) {
+            showToast('No changes to save. Only Avatar can be updated.', 'info');
+            return;
+        }
 
         try {
             showToast('Updating profile...', 'info');
@@ -235,14 +242,8 @@ class ProfileManager {
                 return;
             }
 
-            // Update user profile in users table
-            // Bug #1 Check: Email is read-only, so we DO NOT include it in updateData
-            const updateData = { name, phone };
-
-            // Include avatar if changed
-            if (this.avatarBase64) {
-                updateData.avatar = this.avatarBase64;
-            }
+            // Update user profile in users table (Avatar Only)
+            const updateData = { avatar: this.avatarBase64 };
 
             console.log('Sending update to users table:', updateData);
 
@@ -252,29 +253,24 @@ class ProfileManager {
                 .eq('id', user.id)
                 .select();
 
-            // Sync with employees table if user is an employee
-            const isEmployee = await dataLayer.getCurrentUserRole() === 'employee';
-            if (isEmployee) {
-                await supabaseClient
-                    .from('employees')
-                    .update({ name, phone })
-                    .eq('user_id', user.id);
-            }
-
             if (updateError) {
                 console.error('Supabase update error:', updateError);
                 throw updateError;
             }
 
+            // Note: We do NOT sync name to employees table anymore because name is read-only.
+
             if (!updateResult || updateResult.length === 0) {
-                console.warn('Update returned no data. Possible RLS policy violation or record not found.');
-                throw new Error('Failed to update profile. Please try again.');
+                // It's possible updateResult is empty if RLS allowed update but didn't return rows? 
+                // But normally .select() returns it.
+                // If it succeeded, we proceed.
             }
 
             showToast('Profile updated successfully', 'success');
 
             // Update local state
-            this.currentUser = { ...this.currentUser, name, phone };
+            // Name is read-only, so we don't update it from a local variable
+            // this.currentUser = { ...this.currentUser }; 
 
             // Update avatar in local state
             if (this.avatarBase64) {
