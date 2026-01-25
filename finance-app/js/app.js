@@ -251,6 +251,47 @@ class App {
                 this.navigateTo('profile');
             });
         }
+
+        // Bug #5: Swipe Gestures for Mobile Menu
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, { passive: true });
+
+        document.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            this.handleSwipeGesture();
+        }, { passive: true });
+    }
+
+    /**
+     * Handle swipe gestures
+     */
+    handleSwipeGesture() {
+        // Only on mobile
+        if (window.innerWidth > 768) return;
+
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        const swipeThreshold = 50; // min distance
+        const leftEdgeThreshold = 30; // only swipe from left edge to open
+
+        // Swipe Right (Open Menu)
+        if (touchEndX > touchStartX + swipeThreshold) {
+            // Only allow opening if starting from the left edge
+            if (touchStartX < leftEdgeThreshold) {
+                sidebar.classList.add('mobile-open');
+                if (overlay) overlay.classList.add('active');
+            }
+        }
+
+        // Swipe Left (Close Menu)
+        if (touchStartX > touchEndX + swipeThreshold) {
+            sidebar.classList.remove('mobile-open');
+            if (overlay) overlay.classList.remove('active');
+        }
     }
 
     /**
@@ -726,6 +767,7 @@ class App {
                 </td>
                 <td><span class="badge badge-${entry.type}">${entry.type}</span></td>
                 <td><span class="badge badge-${entry.status}">${entry.status}</span></td>
+                <td>${entry.createdByName || '-'}</td>
             </tr>
         `).join('');
     }

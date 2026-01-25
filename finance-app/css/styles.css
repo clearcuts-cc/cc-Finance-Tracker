@@ -162,7 +162,10 @@ textarea {
 /* Specific fix for invoice address fields */
 textarea#invoiceClientAddress,
 textarea#invoiceAgencyAddress {
-    height: 80px;
+    height: 80px !important;
+    min-height: 80px !important;
+    max-height: 80px !important;
+    resize: none !important;
 }
 
 table {

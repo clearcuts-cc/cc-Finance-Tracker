@@ -169,10 +169,12 @@ class ProfileManager {
         if (fName) fName.value = this.currentUser.name || '';
         if (fEmail) {
             fEmail.value = this.currentUser.email || '';
+            // Bug #1: Ensure email is unchangeable
             fEmail.readOnly = true;
-            fEmail.title = "Email cannot be changed";
-            fEmail.style.opacity = "0.7";
+            fEmail.disabled = true; // Use disabled for stronger visual cue
+            fEmail.style.opacity = "0.6";
             fEmail.style.cursor = "not-allowed";
+            fEmail.style.backgroundColor = "var(--color-bg-tertiary)"; // Visually distinct
         }
         if (fPhone) fPhone.value = this.currentUser.phone || '';
     }
@@ -234,6 +236,7 @@ class ProfileManager {
             }
 
             // Update user profile in users table
+            // Bug #1 Check: Email is read-only, so we DO NOT include it in updateData
             const updateData = { name, phone };
 
             // Include avatar if changed
@@ -241,11 +244,22 @@ class ProfileManager {
                 updateData.avatar = this.avatarBase64;
             }
 
+            console.log('Sending update to users table:', updateData);
+
             const { data: updateResult, error: updateError } = await supabaseClient
                 .from('users')
                 .update(updateData)
                 .eq('id', user.id)
                 .select();
+
+            // Sync with employees table if user is an employee
+            const isEmployee = await dataLayer.getCurrentUserRole() === 'employee';
+            if (isEmployee) {
+                await supabaseClient
+                    .from('employees')
+                    .update({ name, phone })
+                    .eq('user_id', user.id);
+            }
 
             if (updateError) {
                 console.error('Supabase update error:', updateError);

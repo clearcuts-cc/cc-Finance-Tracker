@@ -282,19 +282,30 @@ class InvestmentsManager {
     async approve(id) {
         if (!confirm('Approve this investment?')) return;
         try {
+            showToast('Processing approval...', 'info');
             await dataLayer.updateInvestmentStatus(id, 'approved');
-            showToast('Approved', 'success');
-            this.loadInvestments();
-        } catch (e) { showToast('Error', 'error'); }
+            showToast('Investment Approved Successfully', 'success');
+
+            // Optimistic update or reload
+            await this.loadInvestments();
+        } catch (e) {
+            console.error('Approval failed:', e);
+            showToast('Error approving investment: ' + e.message, 'error');
+        }
     }
 
     async decline(id) {
         if (!confirm('Decline this investment?')) return;
         try {
+            showToast('Processing request...', 'info');
             await dataLayer.updateInvestmentStatus(id, 'declined');
-            showToast('Declined', 'success');
-            this.loadInvestments();
-        } catch (e) { showToast('Error', 'error'); }
+            showToast('Investment Declined', 'info'); // Using info for decline
+
+            await this.loadInvestments();
+        } catch (e) {
+            console.error('Decline failed:', e);
+            showToast('Error declining investment: ' + e.message, 'error');
+        }
     }
 
     async delete(id) {
