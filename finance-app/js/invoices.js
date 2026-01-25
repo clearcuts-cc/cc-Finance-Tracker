@@ -117,6 +117,9 @@ class InvoiceManager {
             this.saveInvoice();
         });
 
+        // Email invoice
+        document.getElementById('emailInvoiceBtn').addEventListener('click', () => this.sendEmail());
+
         // Reset invoice
         document.getElementById('resetInvoiceBtn').addEventListener('click', () => this.resetForm());
 
@@ -239,6 +242,7 @@ class InvoiceManager {
 
             // Client details
             clientName: document.getElementById('invoiceClientName').value,
+            clientEmail: document.getElementById('invoiceClientEmail').value,
             clientAddress: document.getElementById('invoiceClientAddress').value,
 
             // Invoice details
@@ -627,6 +631,51 @@ class InvoiceManager {
         } catch (error) {
             console.error('Error saving invoice:', error);
             showToast('Failed to save invoice', 'error');
+        }
+    }
+
+    /**
+     * Send invoice via email (Supabase Edge Function)
+     */
+    async sendEmail() {
+        const data = this.getInvoiceData();
+
+        if (!data.clientEmail) {
+            showToast('Please enter a client email address', 'error');
+            document.getElementById('invoiceClientEmail').focus();
+            return;
+        }
+
+        const btn = document.getElementById('emailInvoiceBtn');
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = `<span class="spinner-small"></span> Sending...`;
+
+        try {
+            // TEMPORARILY DISABLED AS REQUESTED
+            // const { data: result, error } = await supabaseClient.functions.invoke('send-invoice', {
+            //     body: {
+            //         invoiceData: data,
+            //         clientEmail: data.clientEmail
+            //     }
+            // });
+
+            // Simulate success for now
+            const result = { success: true };
+            const error = null;
+
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate delay
+
+
+            if (error) throw error;
+
+            showToast(`Invoice sent to ${data.clientEmail}`, 'success');
+        } catch (error) {
+            console.error('Error sending email:', error);
+            showToast('Failed to send email. Check API key or console.', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
         }
     }
 

@@ -143,6 +143,13 @@ class EmployeesManager {
                             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                         </svg>
                     </button>
+                    <button class="btn-icon" onclick="employeesManager.sendResetLink('${emp.email}')" title="Send Password Reset Link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                             <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                             <polyline points="10 17 15 12 10 7"/>
+                             <line x1="15" y1="12" x2="3" y2="12"/>
+                        </svg>
+                    </button>
                 </div>
             </div>
         `).join('');
@@ -226,7 +233,16 @@ class EmployeesManager {
             if (this.editingEmployeeId) {
                 // Update existing employee
                 await dataLayer.updateEmployee(this.editingEmployeeId, { name, email });
-                showToast('Employee updated successfully', 'success');
+
+                // If password was entered during edit, send a reset link as we can't directly change it
+                if (password && password.length > 0) {
+                    await supabaseClient.auth.resetPasswordForEmail(email, {
+                        redirectTo: window.location.origin + '/login.html' // Redirect to login after reset
+                    });
+                    showToast('Employee updated & Password reset link sent', 'success');
+                } else {
+                    showToast('Employee updated successfully', 'success');
+                }
             } else {
                 // Add new employee with account creation
                 if (!password || password.length < 6) {
@@ -338,6 +354,25 @@ class EmployeesManager {
         } catch (error) {
             console.error('Error deleting employee:', error);
             showToast('Error deleting employee', 'error');
+        }
+    }
+
+    /**
+     * Send password reset link manually
+     */
+    async sendResetLink(email) {
+        if (!confirm(`Send password reset link to ${email}?`)) return;
+
+        try {
+            const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+                redirectTo: window.location.origin + '/login.html'
+            });
+
+            if (error) throw error;
+            showToast(`Reset link sent to ${email}`, 'success');
+        } catch (error) {
+            console.error('Error sending reset link:', error);
+            showToast('Failed to send reset link', 'error');
         }
     }
 

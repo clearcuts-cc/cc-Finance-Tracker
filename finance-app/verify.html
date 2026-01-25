@@ -263,12 +263,25 @@
                     // Show success
                     loadingState.style.display = 'none';
                     successState.style.display = 'block';
-                } else if (type === 'recovery') {
-                    // Password reset flow - redirect to a password reset page or login
+                } else if (accessToken && type === 'recovery') {
+                    // Set the session so the user is authenticated when they go to reset-password.html
+                    const { error: sessionError } = await supabaseClient.auth.setSession({
+                        access_token: accessToken,
+                        refresh_token: hashParams.get('refresh_token')
+                    });
+
+                    if (sessionError) throw sessionError;
+
+                    // Password reset flow
                     loadingState.style.display = 'none';
                     successState.style.display = 'block';
                     document.querySelector('#successState .verify-title').textContent = 'Password Reset';
                     document.querySelector('#successState .verify-message').textContent = 'You can now set a new password.';
+
+                    // Update button for reset password
+                    const btn = document.querySelector('#successState .btn');
+                    btn.textContent = 'Reset Password';
+                    btn.href = 'reset-password.html';
                 } else {
                     // Check if user is already verified via session
                     const { data: { session } } = await supabaseClient.auth.getSession();

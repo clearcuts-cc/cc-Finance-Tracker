@@ -112,6 +112,14 @@
                             <span>Clients</span>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="#investments" class="nav-link" data-page="investments">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                            </svg>
+                            <span>Investments</span>
+                        </a>
+                    </li>
                     <li class="nav-item admin-only" id="employeesNavItem">
                         <a href="#employees" class="nav-link" data-page="employees">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -121,6 +129,16 @@
                                 <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                             </svg>
                             <span>Employees</span>
+                        </a>
+                    </li>
+                    <li class="nav-item admin-only" id="notificationsNavItem">
+                        <a href="#notifications" class="nav-link" data-page="notifications">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                            </svg>
+                            <span>Notifications</span>
+                            <span class="badge badge-danger hidden" id="notifCountBadge">0</span>
                         </a>
                     </li>
                     <li class="nav-item">
@@ -239,6 +257,18 @@
                             <div class="stat-content">
                                 <span class="stat-label">Total Expense</span>
                                 <span class="stat-value" id="totalExpense">₹0</span>
+                            </div>
+                        </div>
+                        <div class="stat-card available">
+                            <div class="stat-icon" style="background: rgba(16, 185, 129, 0.2); color: #10b981;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="2" y="5" width="20" height="14" rx="2" />
+                                    <line x1="2" y1="10" x2="22" y2="10" />
+                                </svg>
+                            </div>
+                            <div class="stat-content">
+                                <span class="stat-label">Available Balance</span>
+                                <span class="stat-value" id="availableBalance">₹0</span>
                             </div>
                         </div>
                         <div class="stat-card pending">
@@ -552,11 +582,16 @@
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="form-row">
+                                    <div class="form-row three-col">
                                         <div class="form-group">
                                             <label for="invoiceClientName">Client Name</label>
                                             <input type="text" id="invoiceClientName" required
                                                 placeholder="Client name">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="invoiceClientEmail">Email</label>
+                                            <input type="email" id="invoiceClientEmail"
+                                                placeholder="client@example.com">
                                         </div>
                                         <div class="form-group">
                                             <label for="invoiceClientPhone">Phone</label>
@@ -673,6 +708,15 @@
                                 <div class="invoice-actions">
                                     <button type="button" class="btn btn-secondary" id="previewInvoiceBtn">Preview
                                         Invoice</button>
+                                    <button type="button" class="btn btn-info" id="emailInvoiceBtn">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path
+                                                d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z">
+                                            </path>
+                                            <polyline points="22,6 12,13 2,6"></polyline>
+                                        </svg>
+                                        Send Email
+                                    </button>
                                     <button type="button" class="btn btn-primary" id="downloadInvoiceBtn">Download
                                         PDF</button>
                                     <button type="submit" class="btn btn-success" id="saveInvoiceBtn">Save
@@ -734,6 +778,68 @@
                         </svg>
                         <h3>No clients yet</h3>
                         <p>Add your first client to get started</p>
+                    </div>
+                </section>
+
+                <!-- Investments Page -->
+                <section class="page" id="investmentsPage">
+                    <div class="section-header">
+                        <h2>Investments</h2>
+                        <button class="btn btn-primary" id="addInvestmentBtn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 5v14M5 12h14" />
+                            </svg>
+                            Add Investment
+                        </button>
+                    </div>
+
+                    <div class="investments-charts" style="margin-bottom: 2rem;">
+                        <div class="chart-card full-width">
+                            <div class="chart-header">
+                                <h3>Investment Portfolio Distribution</h3>
+                            </div>
+                            <div class="chart-body" style="height: 300px;">
+                                <canvas id="investmentsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Investment Analytics -->
+                    <div class="analytics-grid mb-30">
+                        <div class="chart-card full-width">
+                            <div class="chart-header">
+                                <h3>Investment Portfolio Distribution</h3>
+                            </div>
+                            <div class="chart-body large">
+                                <canvas id="investmentChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="entries-table-container">
+                        <table class="entries-table">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Type</th>
+                                    <th>Amount</th>
+                                    <th>Date Bought</th>
+                                    <th>Purpose</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="investmentsBody">
+                                <!-- Dynamic content -->
+                            </tbody>
+                        </table>
+                        <div class="empty-state hidden" id="investmentsEmptyState">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                            </svg>
+                            <h3>No investments yet</h3>
+                            <p>Track your assets and investments here</p>
+                        </div>
                     </div>
                 </section>
 
@@ -827,6 +933,27 @@
                 </section>
 
                 <!-- Pending Approvals Section (Admin Only) - Shows in entries page -->
+
+                <!-- Notifications Page -->
+                <section class="page admin-only" id="notificationsPage">
+                    <div class="section-header">
+                        <h2>Notifications</h2>
+                        <button class="btn btn-secondary btn-sm" id="markAllReadBtn">Mark all as read</button>
+                    </div>
+
+                    <div class="notifications-list" id="notificationsList">
+                        <!-- Dynamic notifications -->
+                    </div>
+
+                    <div class="empty-state hidden" id="notificationsEmptyState">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                        </svg>
+                        <h3>All caught up!</h3>
+                        <p>No new notifications at the moment.</p>
+                    </div>
+                </section>
 
                 <!-- Settings Page -->
                 <section class="page" id="settingsPage">
@@ -994,6 +1121,55 @@
         </div>
     </div>
 
+    <!-- Investment Modal -->
+    <div class="modal-overlay" id="investmentModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="investmentModalTitle">Add Investment</h3>
+                <button class="modal-close" id="closeInvestmentModal" aria-label="Close modal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <form id="investmentForm" class="modal-form">
+                <input type="hidden" id="investmentId">
+                <div class="form-group">
+                    <label for="investmentItem">Item Name *</label>
+                    <input type="text" id="investmentItem" required placeholder="e.g. New Laptop">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="investmentType">Type *</label>
+                        <select id="investmentType" required>
+                            <option value="equipment">Equipment</option>
+                            <option value="software">Software</option>
+                            <option value="stock">Stock</option>
+                            <option value="real_estate">Real Estate</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="investmentAmount">Amount *</label>
+                        <input type="number" id="investmentAmount" required min="0" step="0.01">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="investmentDate">Date Bought *</label>
+                    <input type="date" id="investmentDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="investmentPurpose">Purpose / Notes</label>
+                    <textarea id="investmentPurpose" rows="2"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelInvestment">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="saveInvestment">Save Investment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Profile Modal -->
     <!-- Profile Modal Removed (Moved to Profile Page) -->
 
@@ -1114,6 +1290,8 @@
     <script src="js/invoices.js"></script>
     <script src="js/clients.js"></script>
     <script src="js/employees.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/investments.js"></script>
     <script src="js/main.js"></script>
     <script src="js/app.js"></script>
 </body>

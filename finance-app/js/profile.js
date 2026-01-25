@@ -31,6 +31,12 @@ class ProfileManager {
         this.loadFromLocalStorage();
         this.updateHeaderAvatar();
 
+        // If we are already on profile page (or it was restored), render it
+        if (document.getElementById('profilePage') &&
+            document.getElementById('profilePage').classList.contains('active')) {
+            this.renderProfilePage();
+        }
+
         // Then fetch fresh data from Supabase
         await this.loadCurrentUser();
     }
@@ -109,6 +115,12 @@ class ProfileManager {
         } catch (error) {
             console.warn('Failed to load user data from Supabase, using localStorage:', error);
             this.updateHeaderAvatar();
+
+            // If profile page is active, render it with local data
+            if (document.getElementById('profilePage') &&
+                document.getElementById('profilePage').classList.contains('active')) {
+                this.renderProfilePage();
+            }
         }
     }
 
@@ -223,13 +235,16 @@ class ProfileManager {
                 updateData.avatar = this.avatarBase64;
             }
 
-            const { error: updateError } = await supabaseClient
+            const { data: updateResult, error: updateError } = await supabaseClient
                 .from('users')
                 .update(updateData)
-                .eq('id', user.id);
+                .eq('id', user.id)
+                .select();
 
-            if (updateError) {
-                throw updateError;
+            if (updateError) throw updateError;
+
+            if (!updateResult || updateResult.length === 0) {
+                throw new Error('Failed to update profile. Please try again.');
             }
 
             showToast('Profile updated successfully', 'success');

@@ -27,7 +27,7 @@ class App {
      */
     async init() {
         const loadingOverlay = document.getElementById('globalLoadingOverlay');
-        
+
         // Check Authentication using Supabase session
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (!session) {
@@ -84,6 +84,18 @@ class App {
                 window.profileManager.init();
             }
 
+            // Initialize investments manager
+            if (window.investmentsManager) {
+                console.log('Initializing investments manager...');
+                window.investmentsManager.init();
+            }
+
+            // Initialize notifications manager
+            if (window.notificationsManager) {
+                console.log('Initializing notifications manager...');
+                window.notificationsManager.init();
+            }
+
             // Setup role-based visibility
             console.log('Setting up role-based visibility...');
             await this.setupRoleBasedUI();
@@ -93,7 +105,7 @@ class App {
             dataLayer.subscribe(DATA_STORES.INVOICES, () => invoiceManager.renderInvoiceHistory());
 
             console.log('FinanceFlow initialized successfully');
-            
+
             // Hide loading overlay with animation
             if (loadingOverlay) {
                 loadingOverlay.classList.add('hidden');
@@ -104,7 +116,7 @@ class App {
         } catch (error) {
             console.error('FATAL: Failed to initialize app:', error);
             showToast(`Failed to initialize: ${error.message}`, 'error');
-            
+
             // Hide loading overlay even on error
             if (loadingOverlay) {
                 loadingOverlay.classList.add('hidden');
@@ -278,9 +290,18 @@ class App {
             clients: 'Clients',
             employees: 'Employees',
             settings: 'Settings',
-            profile: 'My Profile'
+            employees: 'Employees',
+            settings: 'Settings',
+            profile: 'My Profile',
+            investments: 'Investments',
+            notifications: 'Notifications'
         };
         document.getElementById('pageTitle').textContent = titles[page] || 'Dashboard';
+
+        // Load notifications if navigating to notifications page
+        if (page === 'notifications' && window.notificationsManager) {
+            window.notificationsManager.loadNotifications();
+        }
 
         // Render pending approvals if on entries page and is admin
         if (page === 'entries' && this.isAdmin) {
@@ -668,6 +689,11 @@ class App {
         document.getElementById('totalExpense').textContent = formatCurrency(summary.totalExpense, currency);
         document.getElementById('pendingAmount').textContent = formatCurrency(summary.pendingAmount, currency);
         document.getElementById('netBalance').textContent = formatCurrency(summary.netBalance, currency);
+
+        const availableEl = document.getElementById('availableBalance');
+        if (availableEl) {
+            availableEl.textContent = formatCurrency(summary.availableBalance, currency);
+        }
     }
 
     /**
@@ -816,12 +842,10 @@ class App {
         try {
             const pendingEntries = await dataLayer.getPendingEntries();
 
-            // Update count badge
             if (countBadge) {
                 countBadge.textContent = pendingEntries.length;
             }
 
-            // Hide section if no pending entries
             if (pendingEntries.length === 0) {
                 section.style.display = 'none';
                 return;
@@ -829,9 +853,13 @@ class App {
 
             section.style.display = 'block';
 
-            container.innerHTML = pendingEntries.map(entry => `
-                <div class="pending-entry-card" data-id="${entry.id}">
+            container.innerHTML = pendingEntries.map(entry => {
+                const isDeletion = entry.deletionRequested;
+
+                return `
+                <div class="pending-entry-card" data-id="${entry.id}" style="${isDeletion ? 'border: 1px solid var(--color-danger); background: rgba(239, 68, 68, 0.05);' : ''}">
                     <div class="pending-entry-info">
+                        ${isDeletion ? '<div style="color: var(--color-danger); font-weight: bold; margin-bottom: 5px; font-size: 0.8rem;">⚠️ DELETION REQUESTED</div>' : ''}
                         <span>
                             <small>Date</small>
                             <strong>${formatDate(entry.date)}</strong>
@@ -847,55 +875,71 @@ class App {
                             </strong>
                         </span>
                         <span>
-                            <small>Created By</small>
+                            <small>By</small>
                             <strong>${entry.createdByName || 'Unknown'}</strong>
-                        </span>
-                        <span>
-                            <small>Description</small>
-                            <strong>${entry.description || '-'}</strong>
                         </span>
                     </div>
                     <div class="pending-entry-actions">
-                        <button class="btn-approve" data-id="${entry.id}" title="Approve">
-                            ✓ Approve
+                        <button class="btn-approve" data-id="${entry.id}" data-type="${isDeletion ? 'delete' : 'approve'}" 
+                                title="${isDeletion ? 'Confirm Delete' : 'Approve'}" 
+                                style="${isDeletion ? 'background-color: var(--color-danger); color: white;' : ''}">
+                            ${isDeletion ? '🗑 Confirm' : '✓ Approve'}
                         </button>
-                        <button class="btn-decline" data-id="${entry.id}" title="Decline">
-                            ✕ Decline
+                        <button class="btn-decline" data-id="${entry.id}" data-type="${isDeletion ? 'cancel' : 'decline'}" 
+                                title="${isDeletion ? 'Cancel Request' : 'Decline'}">
+                             ${isDeletion ? '✕ Cancel' : '✕ Decline'}
                         </button>
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
 
-            // Bind approve/decline buttons
+            // Bind approve/confirm buttons
             container.querySelectorAll('.btn-approve').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const id = btn.dataset.id;
+                    const type = btn.dataset.type;
                     try {
-                        await dataLayer.approveEntry(id);
-                        showToast('Entry approved successfully', 'success');
+                        if (type === 'delete') {
+                            if (!confirm('Confirm deletion of this entry? This cannot be undone.')) return;
+                            await dataLayer.deleteEntry(id); // Admin delete = actual delete
+                            showToast('Entry deleted successfully', 'success');
+                        } else {
+                            await dataLayer.approveEntry(id);
+                            showToast('Entry approved successfully', 'success');
+                        }
                         await this.renderPendingApprovals();
                         await this.refreshData();
                     } catch (error) {
-                        console.error('Error approving entry:', error);
-                        showToast('Failed to approve entry', 'error');
+                        console.error('Error action:', error);
+                        showToast('Action failed', 'error');
                     }
                 });
             });
 
+            // Bind decline/cancel buttons
             container.querySelectorAll('.btn-decline').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const id = btn.dataset.id;
-                    if (!confirm('Are you sure you want to decline this entry?')) return;
+                    const type = btn.dataset.type;
                     try {
-                        await dataLayer.declineEntry(id);
-                        showToast('Entry declined', 'info');
+                        if (type === 'cancel') {
+                            await dataLayer.declineDeletionRequest(id);
+                            showToast('Deletion request cancelled', 'info');
+                        } else {
+                            if (!confirm('Are you sure you want to decline this entry?')) return;
+                            await dataLayer.declineEntry(id);
+                            showToast('Entry declined', 'info');
+                        }
                         await this.renderPendingApprovals();
+                        await this.refreshData();
                     } catch (error) {
-                        console.error('Error declining entry:', error);
-                        showToast('Failed to decline entry', 'error');
+                        console.error('Error declining:', error);
+                        showToast('Action failed', 'error');
                     }
                 });
             });
+
         } catch (error) {
             console.error('Error rendering pending approvals:', error);
         }

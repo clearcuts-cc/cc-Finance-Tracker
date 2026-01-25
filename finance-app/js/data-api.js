@@ -29,7 +29,9 @@ const fromDbEntry = (row) => ({
     approvalStatus: row.approval_status || 'approved',
     createdByName: row.created_by_name || 'Unknown',
     approvedBy: row.approved_by,
-    approvedAt: row.approved_at
+    approvedAt: row.approved_at,
+    deletionRequested: row.deletion_requested,
+    deletionRequestedBy: row.deletion_requested_by
 });
 
 const toDbInvoice = (invoice) => ({
@@ -163,6 +165,33 @@ class DataLayerAPI {
     }
 
     /**
+     * Get admin ID for the current user
+     * If user is admin, returns their own ID
+     * If user is employee, returns their linked admin's ID
+     */
+    async getAdminId() {
+        const userId = await this.getCurrentUserId();
+        const userRole = await this.getCurrentUserRole();
+
+        if (userRole === 'admin') return userId;
+
+        // For employees, get admin_id from user metadata or employees table
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        let adminId = session?.user?.user_metadata?.admin_id;
+
+        if (!adminId) {
+            const { data: employeeData } = await supabaseClient
+                .from('employees')
+                .select('admin_id')
+                .eq('user_id', userId)
+                .single();
+            adminId = employeeData?.admin_id;
+        }
+
+        return adminId || userId;
+    }
+
+    /**
      * Check if current user is admin
      */
     async isAdmin() {
@@ -211,7 +240,9 @@ class DataLayerAPI {
         this.listeners.get(storeName).add(callback);
 
         return () => {
-            this.listeners.get(storeName).delete(callback);
+            if (this.listeners.has(storeName)) {
+                this.listeners.get(storeName).delete(callback);
+            }
         };
     }
 
@@ -230,18 +261,11 @@ class DataLayerAPI {
         const userId = await this.getCurrentUserId();
         const userRole = await this.getCurrentUserRole();
         const userName = await this.getCurrentUserName();
+        const adminId = await this.getAdminId();
         const dbEntry = toDbEntry(entry);
 
         // Employees' entries need approval, admins' entries are auto-approved
         const approvalStatus = userRole === 'admin' ? 'approved' : 'pending';
-
-        // Get admin_id: for admins it's their own ID, for employees it's their admin's ID
-        let adminId = userId;
-        if (userRole === 'employee') {
-            // Get admin_id from user metadata (set during employee signup)
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            adminId = session?.user?.user_metadata?.admin_id || userId;
-        }
 
         const { data, error } = await supabaseClient
             .from('finance_entries')
@@ -282,12 +306,31 @@ class DataLayerAPI {
     }
 
     async deleteEntry(id) {
-        const { error } = await supabaseClient
-            .from('finance_entries')
-            .delete()
-            .eq('id', id);
+        const isAdmin = await this.isAdmin();
+        const userId = await this.getCurrentUserId();
 
-        if (error) this.handleError(error, 'Delete entry');
+        if (isAdmin) {
+            // Admin can delete immediately
+            const { error } = await supabaseClient
+                .from('finance_entries')
+                .delete()
+                .eq('id', id);
+
+            if (error) this.handleError(error, 'Delete entry');
+        } else {
+            // Employee requests deletion
+            const { error } = await supabaseClient
+                .from('finance_entries')
+                .update({
+                    deletion_requested: true,
+                    deletion_requested_by: userId
+                })
+                .eq('id', id);
+
+            if (error) this.handleError(error, 'Request delete entry');
+            // Maybe show a different toast here? Handled in UI likely.
+        }
+
         this.notifyListeners(DATA_STORES.ENTRIES);
         return true;
     }
@@ -361,7 +404,7 @@ class DataLayerAPI {
             .from('finance_entries')
             .select('*')
             .eq('admin_id', userId)
-            .eq('approval_status', 'pending')
+            .or('approval_status.eq.pending,deletion_requested.eq.true')
             .order('created_at', { ascending: false });
 
         if (error) this.handleError(error, 'Get pending entries');
@@ -403,6 +446,16 @@ class DataLayerAPI {
         if (error) this.handleError(error, 'Decline entry');
         this.notifyListeners(DATA_STORES.ENTRIES);
         return fromDbEntry(data);
+    }
+
+    async declineDeletionRequest(id) {
+        const { error } = await supabaseClient
+            .from('finance_entries')
+            .update({ deletion_requested: false, deletion_requested_by: null })
+            .eq('id', id);
+        if (error) this.handleError(error, 'Decline deletion request');
+        this.notifyListeners(DATA_STORES.ENTRIES);
+        return true;
     }
 
     async getFilteredEntries(filters = {}) {
@@ -470,26 +523,38 @@ class DataLayerAPI {
         let pendingAmount = 0;
         let receivedAmount = 0;
 
+        // Logic:
+        // Net Balance = Total Income (Received + Pending) - Total Expense
+        // Available Balance = Income (Received Only) - Total Expense
+        // Pending Amount = Income (Pending)
+
+        let availableIncome = 0;
+
         entries.forEach(entry => {
             const amount = parseFloat(entry.amount) || 0;
             if (entry.type === 'income') {
                 totalIncome += amount;
+                if (entry.status === 'pending') {
+                    pendingAmount += amount;
+                } else {
+                    receivedAmount += amount;
+                    availableIncome += amount; // Only received income counts for available
+                }
             } else {
                 totalExpense += amount;
             }
-            if (entry.status === 'pending') {
-                pendingAmount += amount;
-            } else {
-                receivedAmount += amount;
-            }
         });
+
+        // Ensure available doesn't go below zero if expense > available income? 
+        // User didn't specify, but standard acc: can be negative (overdraft).
 
         return {
             totalIncome,
             totalExpense,
             pendingAmount,
             receivedAmount,
-            netBalance: totalIncome - totalExpense
+            netBalance: totalIncome - totalExpense,
+            availableBalance: availableIncome - totalExpense
         };
     }
 
@@ -589,9 +654,23 @@ class DataLayerAPI {
         const dbInvoice = toDbInvoice(invoiceData);
 
         // Insert invoice
+        // Add creator details
+        const userName = await this.getCurrentUserName();
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        const userEmail = session?.user?.email;
+
+        const adminId = await this.getAdminId();
+
         const { data: invoiceResult, error: invoiceError } = await supabaseClient
             .from('invoices')
-            .insert({ ...dbInvoice, user_id: userId })
+            .insert({
+                ...dbInvoice,
+                user_id: userId,
+                admin_id: adminId,
+                created_by: userId,
+                created_by_name: userName,
+                created_by_email: userEmail
+            })
             .select()
             .single();
 
@@ -698,11 +777,11 @@ class DataLayerAPI {
     }
 
     async getAllInvoices() {
-        const userId = await this.getCurrentUserId();
+        const adminId = await this.getAdminId();
         const { data, error } = await supabaseClient
             .from('invoices')
             .select('*, invoice_services(*)')
-            .eq('user_id', userId)
+            .eq('admin_id', adminId)
             .order('created_at', { ascending: false });
 
         if (error) this.handleError(error, 'Get all invoices');
@@ -735,9 +814,14 @@ class DataLayerAPI {
 
     async addClient(client) {
         const userId = await this.getCurrentUserId();
+        const adminId = await this.getAdminId();
         const { data, error } = await supabaseClient
             .from('clients')
-            .insert({ ...client, user_id: userId })
+            .insert({
+                ...client,
+                user_id: userId,
+                admin_id: adminId
+            })
             .select()
             .single();
 
@@ -749,7 +833,10 @@ class DataLayerAPI {
     async updateClient(id, client) {
         const { data, error } = await supabaseClient
             .from('clients')
-            .update(client)
+            .update({
+                ...client,
+                updated_at: new Date().toISOString()
+            })
             .eq('id', id)
             .select()
             .single();
@@ -782,11 +869,11 @@ class DataLayerAPI {
     }
 
     async getAllClients() {
-        const userId = await this.getCurrentUserId();
+        const adminId = await this.getAdminId();
         const { data, error } = await supabaseClient
             .from('clients')
             .select('*')
-            .eq('user_id', userId)
+            .eq('admin_id', adminId)
             .order('name', { ascending: true });
 
         if (error) this.handleError(error, 'Get all clients');
@@ -796,6 +883,66 @@ class DataLayerAPI {
     async getClientByName(name) {
         const clients = await this.getAllClients();
         return clients.find(c => c.name.toLowerCase() === name.toLowerCase());
+    }
+
+    // ==================== Investments ====================
+
+    async addInvestment(investment) {
+        const userId = await this.getCurrentUserId();
+        const userName = await this.getCurrentUserName();
+        const userRole = await this.getCurrentUserRole();
+
+        // Admin entries approved by default, Employee entries pending
+        const status = userRole === 'admin' ? 'approved' : 'pending';
+
+        const { data, error } = await supabaseClient
+            .from('investments')
+            .insert({
+                ...investment,
+                created_by: userId,
+                created_by_name: userName,
+                status: status
+            })
+            .select()
+            .single();
+
+        if (error) this.handleError(error, 'Add investment');
+        if (DATA_STORES.INVESTMENTS) this.notifyListeners(DATA_STORES.INVESTMENTS);
+        return data;
+    }
+
+    async getInvestments() {
+        const { data, error } = await supabaseClient
+            .from('investments')
+            .select('*')
+            .order('date_bought', { ascending: false });
+
+        if (error) this.handleError(error, 'Get investments');
+        return data || [];
+    }
+
+    async updateInvestmentStatus(id, status) {
+        const { data, error } = await supabaseClient
+            .from('investments')
+            .update({ status: status })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) this.handleError(error, 'Update investment status');
+        if (DATA_STORES.INVESTMENTS) this.notifyListeners(DATA_STORES.INVESTMENTS);
+        return data;
+    }
+
+    async deleteInvestment(id) {
+        const { error } = await supabaseClient
+            .from('investments')
+            .delete()
+            .eq('id', id);
+
+        if (error) this.handleError(error, 'Delete investment');
+        if (DATA_STORES.INVESTMENTS) this.notifyListeners(DATA_STORES.INVESTMENTS);
+        return true;
     }
 
     // ==================== Employees (Admin Only) ====================
@@ -1030,6 +1177,54 @@ class DataLayerAPI {
         console.warn(`Clear store ${storeName} requested`);
         return this.clearAll();
     }
+
+    // ==================== Notifications ====================
+
+    async getNotifications() {
+        const userId = await this.getCurrentUserId();
+        const { data, error } = await supabaseClient
+            .from('notifications')
+            .select('*')
+            .eq('admin_id', userId)
+            .order('created_at', { ascending: false });
+
+        if (error) this.handleError(error, 'Get notifications');
+        return data || [];
+    }
+
+    async getUnreadNotificationCount() {
+        const userId = await this.getCurrentUserId();
+        const { count, error } = await supabaseClient
+            .from('notifications')
+            .select('*', { count: 'exact', head: true })
+            .eq('admin_id', userId)
+            .eq('is_read', false);
+
+        if (error) this.handleError(error, 'Get unread count');
+        return count || 0;
+    }
+
+    async markNotificationAsRead(id) {
+        const { error } = await supabaseClient
+            .from('notifications')
+            .update({ is_read: true })
+            .eq('id', id);
+
+        if (error) this.handleError(error, 'Mark as read');
+        this.notifyListeners(DATA_STORES.NOTIFICATIONS);
+        return true;
+    }
+
+    async deleteNotification(id) {
+        const { error } = await supabaseClient
+            .from('notifications')
+            .delete()
+            .eq('id', id);
+
+        if (error) this.handleError(error, 'Delete notification');
+        this.notifyListeners(DATA_STORES.NOTIFICATIONS);
+        return true;
+    }
 }
 
 // Store names (kept for compatibility)
@@ -1038,7 +1233,9 @@ const DATA_STORES = {
     INVOICES: 'invoices',
     CLIENTS: 'clients',
     EMPLOYEES: 'employees',
-    SETTINGS: 'settings'
+    SETTINGS: 'settings',
+    INVESTMENTS: 'investments',
+    NOTIFICATIONS: 'notifications'
 };
 
 // Create and export singleton instance
