@@ -871,11 +871,33 @@ class App {
             // Store role in localStorage for quick access
             localStorage.setItem('userRole', this.isAdmin ? 'admin' : 'employee');
 
-            // Show/hide admin-only elements
+            // 1. Show/Hide Admin-Only elements (General)
             document.querySelectorAll('.admin-only').forEach(el => {
-                // Force double check
                 el.style.display = this.isAdmin ? '' : 'none';
             });
+
+            // 2. Hide Dashboard and Analytics for Employees
+            // 3. Redirect if they are on those pages
+            if (!this.isAdmin) {
+                // Hide Nav Items
+                const dashboardNav = document.querySelector('a[data-page="dashboard"]')?.parentElement;
+                const analyticsNav = document.querySelector('a[data-page="analytics"]')?.parentElement;
+
+                if (dashboardNav) dashboardNav.style.display = 'none';
+                if (analyticsNav) analyticsNav.style.display = 'none';
+
+                // Redirect to Entries if currently on restricted page OR default home page (dashboard)
+                if (this.currentPage === 'dashboard' || this.currentPage === 'analytics') {
+                    console.log('Employee detected on restricted page, redirecting to Entries...');
+                    this.navigateTo('entries');
+                }
+            } else {
+                // Check if we need to show them (in case role changed dynamically without reload)
+                const dashboardNav = document.querySelector('a[data-page="dashboard"]')?.parentElement;
+                const analyticsNav = document.querySelector('a[data-page="analytics"]')?.parentElement;
+                if (dashboardNav) dashboardNav.style.display = '';
+                if (analyticsNav) analyticsNav.style.display = '';
+            }
 
             // Update profile badge to show role
             const roleBadge = document.querySelector('.profile-badges .badge-primary');
@@ -886,7 +908,7 @@ class App {
             console.log(`User role: ${this.isAdmin ? 'Admin' : 'Employee'}`);
         } catch (error) {
             console.error('Error setting up role-based UI:', error);
-            // Default to hidden for security
+            // Default to minimal access on error
             this.isAdmin = false;
         }
     }

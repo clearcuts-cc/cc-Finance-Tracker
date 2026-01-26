@@ -212,6 +212,9 @@ class ProfileManager {
     /**
      * Handle File Input Change
      */
+    /**
+     * Handle File Input Change
+     */
     handleAvatarChange(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -221,9 +224,13 @@ class ProfileManager {
             return;
         }
 
+        // Store the file object for uploading during save
+        this.pendingAvatarFile = file;
+
+        // Create local preview immediately (Optimistic UI)
         const reader = new FileReader();
         reader.onload = (event) => {
-            this.avatarBase64 = event.target.result;
+            this.avatarBase64 = event.target.result; // Keep for preview
             this.renderPageAvatar(this.avatarBase64, document.getElementById('pageProfileName').value);
         };
         reader.readAsDataURL(file);
@@ -234,8 +241,8 @@ class ProfileManager {
      */
     async saveProfile() {
         // Strict Rule: Only Avatar can be changed. Name is Read-Only.
-        if (!this.avatarBase64) {
-            showToast('No changes to save. Only Avatar can be updated.', 'info');
+        if (!this.pendingAvatarFile && !this.avatarBase64) {
+            showToast('No changes to save.', 'info');
             return;
         }
 
@@ -248,8 +255,38 @@ class ProfileManager {
                 return;
             }
 
-            // Update user profile in users table (Avatar Only)
-            const updateData = { avatar: this.avatarBase64 };
+            let avatarUrl = this.currentUser.avatar;
+
+            // 1. If we have a new file to upload
+            if (this.pendingAvatarFile) {
+                const file = this.pendingAvatarFile;
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+                // Upload to Supabase Storage
+                const { error: uploadError } = await supabaseClient
+                    .storage
+                    .from('avatars')
+                    .upload(fileName, file, {
+                        cacheControl: '3600',
+                        upsert: false
+                    });
+
+                if (uploadError) {
+                    throw new Error('Upload failed: ' + uploadError.message);
+                }
+
+                // Get Public URL
+                const { data: { publicUrl } } = supabaseClient
+                    .storage
+                    .from('avatars')
+                    .getPublicUrl(fileName);
+
+                avatarUrl = publicUrl;
+            }
+
+            // 2. Update user profile in users table with the URL
+            const updateData = { avatar: avatarUrl };
 
             console.log('Sending update to users table:', updateData);
 
@@ -264,32 +301,19 @@ class ProfileManager {
                 throw updateError;
             }
 
-            // Note: We do NOT sync name to employees table anymore because name is read-only.
-
-            if (!updateResult || updateResult.length === 0) {
-                // It's possible updateResult is empty if RLS allowed update but didn't return rows? 
-                // But normally .select() returns it.
-                // If it succeeded, we proceed.
-            }
-
             showToast('Profile updated successfully', 'success');
 
-            // Update local state
-            // Name is read-only, so we don't update it from a local variable
-            // this.currentUser = { ...this.currentUser }; 
-
-            // Update avatar in local state
-            if (this.avatarBase64) {
-                this.currentUser.avatar = this.avatarBase64;
-            }
-
+            // Update local state with the NEW URL (not the base64 preview)
+            // This ensures if they refresh, they get the real URL
+            this.currentUser.avatar = avatarUrl;
             localStorage.setItem('user', JSON.stringify(this.currentUser));
 
-            // Update UI
+            // Update UI Final State
             this.updateHeaderAvatar();
             this.renderProfilePage();
 
-            // Reset avatar state
+            // Reset pending state
+            this.pendingAvatarFile = null;
             this.avatarBase64 = null;
 
         } catch (error) {
