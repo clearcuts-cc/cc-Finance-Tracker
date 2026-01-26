@@ -204,19 +204,22 @@ class App {
             const sidebar = document.getElementById('sidebar');
             sidebar.classList.toggle('mobile-open');
             if (sidebarOverlay) {
+                // Show overlay on desktop too if desired, or handle via CSS
                 sidebarOverlay.classList.toggle('active');
+                sidebarOverlay.style.display = 'block'; // Ensure visible on desktop if hidden by specific media query
             }
         });
 
         // Close mobile menu on link click
+        // Close menu on link click (Any screen size now since it's an overlay)
         document.querySelectorAll('.nav-link').forEach(link => {
             link.addEventListener('click', () => {
-                if (window.innerWidth <= 768) {
-                    document.getElementById('sidebar').classList.remove('mobile-open');
-                    if (sidebarOverlay) {
-                        sidebarOverlay.classList.remove('active');
-                    }
+                // if (window.innerWidth <= 768) { // Always close on navigation
+                document.getElementById('sidebar').classList.remove('mobile-open');
+                if (sidebarOverlay) {
+                    sidebarOverlay.classList.remove('active');
                 }
+                // }
             });
         });
 
@@ -233,10 +236,11 @@ class App {
             const sidebar = document.getElementById('sidebar');
             const mobileBtn = document.getElementById('mobileMenuBtn');
 
-            if (window.innerWidth <= 768 &&
+            // Apply to Desktop too (remove window.innerWidth check)
+            if (sidebar.classList.contains('mobile-open') &&
                 !sidebar.contains(e.target) &&
-                !mobileBtn.contains(e.target) &&
-                sidebar.classList.contains('mobile-open')) {
+                !mobileBtn.contains(e.target)) {
+
                 sidebar.classList.remove('mobile-open');
                 if (sidebarOverlay) {
                     sidebarOverlay.classList.remove('active');

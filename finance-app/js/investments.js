@@ -160,6 +160,12 @@ class InvestmentsManager {
                 </td>
                 <td>
                     <div class="action-buttons">
+                        <button class="action-btn edit" onclick="investmentsManager.edit('${inv.id}', '${inv.item_name}', '${inv.type}', '${inv.amount}', '${inv.date_bought}', '${(inv.purpose || '').replace(/'/g, "\\'")}')" title="Edit">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                        </button>
                          ${inv.status === 'pending' && isAdmin ? `
                             <button class="action-btn edit" onclick="investmentsManager.approve('${inv.id}')" title="Approve">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -247,12 +253,42 @@ class InvestmentsManager {
         });
     }
 
-    openModal() {
+    openModal(investment = null) {
         const modal = document.getElementById('investmentModal');
         const form = document.getElementById('investmentForm');
+        const title = document.getElementById('investmentModalTitle');
+        const idInput = document.getElementById('investmentId');
+
         form.reset();
-        document.getElementById('investmentDate').value = new Date().toISOString().split('T')[0];
+
+        if (investment) {
+            title.textContent = 'Edit Investment';
+            idInput.value = investment.id;
+            document.getElementById('investmentItem').value = investment.item_name;
+            document.getElementById('investmentType').value = investment.type;
+            document.getElementById('investmentAmount').value = investment.amount;
+            document.getElementById('investmentDate').value = investment.date_bought;
+            document.getElementById('investmentPurpose').value = investment.purpose || '';
+        } else {
+            title.textContent = 'Add Investment';
+            idInput.value = '';
+            document.getElementById('investmentDate').value = new Date().toISOString().split('T')[0];
+        }
+
         modal.classList.add('active');
+    }
+
+    edit(id, name, type, amount, date, purpose) {
+        // Construct basic object from args
+        const inv = {
+            id,
+            item_name: name,
+            type,
+            amount: parseFloat(amount),
+            date_bought: date,
+            purpose
+        };
+        this.openModal(inv);
     }
 
     closeModal() {
@@ -260,6 +296,7 @@ class InvestmentsManager {
     }
 
     async saveInvestment() {
+        const id = document.getElementById('investmentId').value;
         const item = {
             item_name: document.getElementById('investmentItem').value,
             type: document.getElementById('investmentType').value,
@@ -269,8 +306,13 @@ class InvestmentsManager {
         };
 
         try {
-            await dataLayer.addInvestment(item);
-            showToast('Investment added successfully', 'success');
+            if (id) {
+                await dataLayer.updateInvestment(id, item);
+                showToast('Investment updated successfully', 'success');
+            } else {
+                await dataLayer.addInvestment(item);
+                showToast('Investment added successfully', 'success');
+            }
             this.closeModal();
             this.loadInvestments();
         } catch (error) {

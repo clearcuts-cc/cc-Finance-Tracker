@@ -947,18 +947,43 @@ class DataLayerAPI {
         // Admin entries approved by default, Employee entries pending
         const status = userRole === 'admin' ? 'approved' : 'pending';
 
+        const adminId = await this.getAdminId();
         const { data, error } = await supabaseClient
             .from('investments')
             .insert({
                 ...investment,
                 created_by: userId,
                 created_by_name: userName,
-                status: status
+                status: status,
+                admin_id: adminId
             })
             .select()
             .single();
 
         if (error) this.handleError(error, 'Add investment');
+        if (DATA_STORES.INVESTMENTS) this.notifyListeners(DATA_STORES.INVESTMENTS);
+        return data;
+    }
+
+    async updateInvestment(id, investment) {
+        // Prevent updating admin_id or created_by ownership securely
+        // Only update fields: item_name, type, amount, date_bought, purpose, status
+        const updateData = {
+            item_name: investment.item_name,
+            type: investment.type,
+            amount: investment.amount,
+            date_bought: investment.date_bought,
+            purpose: investment.purpose
+        };
+
+        const { data, error } = await supabaseClient
+            .from('investments')
+            .update(updateData)
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) this.handleError(error, 'Update investment');
         if (DATA_STORES.INVESTMENTS) this.notifyListeners(DATA_STORES.INVESTMENTS);
         return data;
     }
@@ -1131,10 +1156,12 @@ class DataLayerAPI {
     // ==================== Settings ====================
 
     async getSetting(key) {
+        const adminId = await this.getAdminId();
         const { data, error } = await supabaseClient
             .from('settings')
             .select('value')
             .eq('key', key)
+            .eq('admin_id', adminId)
             .single();
 
         if (error && error.code !== 'PGRST116') {
@@ -1144,9 +1171,16 @@ class DataLayerAPI {
     }
 
     async setSetting(key, value) {
+        const adminId = await this.getAdminId();
         const { error } = await supabaseClient
             .from('settings')
-            .upsert({ key, value }, { onConflict: 'key' });
+            .upsert({
+                key,
+                value,
+                admin_id: adminId
+            }, {
+                onConflict: 'key, admin_id'
+            });
 
         if (error) this.handleError(error, 'Set setting');
         return true;

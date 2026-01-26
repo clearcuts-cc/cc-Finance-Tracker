@@ -189,23 +189,38 @@ table {
     background: var(--color-bg-secondary);
     border-right: 1px solid var(--color-border);
     display: flex;
+    transform: translateX(0);
+    /* Visible by default (Desktop) */
+    width: var(--sidebar-width);
+    background: var(--color-bg-secondary);
+    border-right: 1px solid var(--color-border);
+    display: flex;
     flex-direction: column;
     z-index: 100;
-    transition: width var(--transition-base), transform var(--transition-base);
+    /* Lower z-index than overlay strategy */
+    transition: transform var(--transition-base);
 }
 
-.sidebar.collapsed {
-    width: var(--sidebar-collapsed-width);
+/* Mobile: Hidden by default */
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+        z-index: 1000;
+        /* Higher on mobile */
+    }
 }
 
-.sidebar.collapsed .logo-text,
-.sidebar.collapsed .nav-link span {
-    opacity: 0;
-    visibility: hidden;
+/* Open state for mobile */
+.sidebar.mobile-open {
+    transform: translateX(0);
 }
 
-.sidebar.collapsed .sidebar-toggle svg {
-    transform: rotate(180deg);
+/* Remove 'collapsed' width logic as we use slide-bar now */
+/* .sidebar.collapsed { width: var(--sidebar-collapsed-width); } */
+
+/* Hide toggle since we use burger now */
+.sidebar-toggle {
+    display: none !important;
 }
 
 .sidebar-header {
@@ -419,28 +434,35 @@ table {
 .main-content {
     flex: 1;
     margin-left: var(--sidebar-width);
+    /* Fixed sidebar margin */
     min-width: 0;
+    width: auto;
     transition: margin-left var(--transition-base);
 }
 
-.sidebar.collapsed~.main-content {
-    margin-left: var(--sidebar-collapsed-width);
+@media (max-width: 768px) {
+    .main-content {
+        margin-left: 0;
+        /* No margin on mobile */
+    }
 }
 
-/* ==================== Header ==================== */
+/* Make header span full width but offset */
 .header {
     position: fixed;
     top: 0;
     right: 0;
     left: var(--sidebar-width);
+    /* Offset by default */
     height: var(--header-height);
     background: var(--color-bg-secondary);
     border-bottom: 1px solid var(--color-border);
     display: flex;
+    /* Ensure flex is active */
     align-items: center;
     justify-content: space-between;
     padding: 0 var(--spacing-xl);
-    z-index: 1000;
+    z-index: 900;
     transition: left var(--transition-base);
 }
 
@@ -448,15 +470,19 @@ table {
     left: var(--sidebar-collapsed-width);
 }
 
-.header-left {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-lg);
-}
-
 .mobile-menu-btn {
     display: none;
-    width: 44px;
+    /* Hidden on Desktop */
+}
+
+@media (max-width: 768px) {
+    .mobile-menu-btn {
+        display: flex;
+    }
+}
+
+.mobile-menu-btn-wrapper {
+    /* Dummy class to absorb previous css lines */
     /* Increased touch target */
     height: 44px;
     /* Increased touch target */
