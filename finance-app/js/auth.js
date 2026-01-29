@@ -234,10 +234,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     if (isEmployee) {
-                        alert("You are not eligible to reset password. Please contact admin.");
-                        if (sendResetBtn) {
-                            sendResetBtn.disabled = false;
-                            sendResetBtn.textContent = 'Send Reset Link';
+                        try {
+                            const { data: sent, error: notifError } = await supabaseClient
+                                .rpc('request_employee_password_reset_notification', { target_email: resetEmail });
+
+                            if (notifError) {
+                                console.error('Notification failed:', notifError);
+                                alert("We couldn't notify your admin automatically. Please contact them directly.");
+                            } else {
+                                alert("A request has been sent to your Admin to reset your password. Please wait for them to provide new credentials.");
+                                forgotModal.classList.remove('active');
+                                forgotForm.reset();
+                            }
+                        } catch (err) {
+                            console.error('RPC Error:', err);
+                            alert("Something went wrong. Please contact your admin.");
+                        } finally {
+                            if (sendResetBtn) {
+                                sendResetBtn.disabled = false;
+                                sendResetBtn.textContent = 'Send Reset Link';
+                            }
                         }
                         return;
                     }

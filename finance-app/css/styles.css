@@ -719,12 +719,16 @@ table {
 }
 
 .stat-value {
-    font-size: clamp(1.25rem, 2.5vw, var(--font-size-2xl));
-    /* Scale font on smaller screens */
+    font-size: clamp(1rem, 1.5vw, 1.5rem);
+    /* Smaller font to fit 5 cols */
     font-weight: 700;
     color: var(--color-text-primary);
-    word-break: break-word;
-    /* Allow break on very long numbers */
+    white-space: nowrap;
+    /* Keep on one line */
+    overflow: hidden;
+    /* Hide overflow */
+    text-overflow: ellipsis;
+    /* ... if it really doesn't fit */
     line-height: 1.2;
 }
 
