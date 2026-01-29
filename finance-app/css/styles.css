@@ -434,40 +434,48 @@ table {
 .main-content {
     flex: 1;
     margin-left: var(--sidebar-width);
-    /* Fixed sidebar margin */
+    width: calc(100% - var(--sidebar-width));
     min-width: 0;
-    width: auto;
-    transition: margin-left var(--transition-base);
+    transition: margin-left var(--transition-base), width var(--transition-base);
 }
 
 @media (max-width: 768px) {
     .main-content {
         margin-left: 0;
+        width: 100%;
         /* No margin on mobile */
     }
 }
 
 /* Make header span full width but offset */
+/* Make header span full width but offset */
 .header {
     position: fixed;
     top: 0;
     right: 0;
-    left: var(--sidebar-width);
-    /* Offset by default */
+    left: auto;
+    width: calc(100% - var(--sidebar-width));
     height: var(--header-height);
     background: var(--color-bg-secondary);
     border-bottom: 1px solid var(--color-border);
     display: flex;
-    /* Ensure flex is active */
     align-items: center;
     justify-content: space-between;
     padding: 0 var(--spacing-xl);
     z-index: 900;
-    transition: left var(--transition-base);
+    transition: width var(--transition-base);
+}
+
+/* Fix mobile header width */
+@media (max-width: 768px) {
+    .header {
+        width: 100%;
+        left: 0;
+    }
 }
 
 .sidebar.collapsed~.main-content .header {
-    left: var(--sidebar-collapsed-width);
+    width: calc(100% - var(--sidebar-collapsed-width));
 }
 
 .mobile-menu-btn {
@@ -2005,9 +2013,8 @@ table {
 }
 
 /* Admin-only visibility */
-.admin-only {
-    /* By default visible, JS will hide for non-admins */
-}
+/* Admin-only visibility - handled by JS */
+/* .admin-only { } */
 
 /* Form help text */
 .form-help {
