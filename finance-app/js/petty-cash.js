@@ -214,15 +214,29 @@ class PettyCashManager {
      */
     async loadFundAllocations() {
         try {
-            // We need to fetch entries where is_petty_cash = true OR client_name = 'Petty Cash'
-            // This covers both strict toggle usage and manual naming convention
-            const { data, error } = await supabaseClient
+            // Fetch by Flag
+            const q1 = supabaseClient
                 .from('finance_entries')
-                .select('amount, date, description, client_name')
-                .or('is_petty_cash.eq.true,client_name.eq.Petty Cash');
+                .select('id, amount, date, description, client_name')
+                .eq('is_petty_cash', true);
 
-            if (error) throw error;
-            this.fundAllocations = data || [];
+            // Fetch by Name (Legacy/Fallback)
+            const q2 = supabaseClient
+                .from('finance_entries')
+                .select('id, amount, date, description, client_name')
+                .eq('client_name', 'Petty Cash');
+
+            const [r1, r2] = await Promise.all([q1, q2]);
+
+            if (r1.error) throw r1.error;
+            if (r2.error) throw r2.error;
+
+            // Merge and Deduplicate by ID
+            const map = new Map();
+            (r1.data || []).forEach(e => map.set(e.id, e));
+            (r2.data || []).forEach(e => map.set(e.id, e));
+
+            this.fundAllocations = Array.from(map.values());
         } catch (error) {
             console.error('Error loading petty cash allocations:', error);
         }
