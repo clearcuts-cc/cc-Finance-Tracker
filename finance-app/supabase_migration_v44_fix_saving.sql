@@ -23,12 +23,19 @@ CREATE POLICY "Users can insert own entries" ON finance_entries
     FOR INSERT 
     WITH CHECK ((select auth.uid()) = user_id);
 
--- Also ensure they can Select/Update/Delete their own
+-- CONSOLIDATED SELECT POLICY (Own Entries + Team Petty Cash Allocations)
 DROP POLICY IF EXISTS "Users can view own entries" ON finance_entries;
-CREATE POLICY "Users can view own entries" ON finance_entries
+DROP POLICY IF EXISTS "Team can view petty cash allocations" ON finance_entries;
+
+CREATE POLICY "Users can view relevant entries" ON finance_entries
     FOR SELECT 
-    USING ((select auth.uid()) = user_id OR admin_id = (select auth.uid())); 
-    -- Users see their own. Admins see entries where they are the admin.
+    USING (
+        ((select auth.uid()) = user_id) OR 
+        (admin_id = (select auth.uid())) OR
+        (is_petty_cash = true AND admin_id IN (
+            SELECT admin_id FROM employees WHERE user_id = (select auth.uid())
+        ))
+    );
 
 DROP POLICY IF EXISTS "Users can update own entries" ON finance_entries;
 CREATE POLICY "Users can update own entries" ON finance_entries
@@ -38,6 +45,51 @@ CREATE POLICY "Users can update own entries" ON finance_entries
 DROP POLICY IF EXISTS "Users can delete own entries" ON finance_entries;
 CREATE POLICY "Users can delete own entries" ON finance_entries
     FOR DELETE
+    USING ((select auth.uid()) = user_id OR admin_id = (select auth.uid()));
+
+
+-- ====================
+-- PETTY CASH ENTRIES CLEANUP
+-- ====================
+
+-- Drop ALL potential legacy policy names to clear warnings
+DROP POLICY IF EXISTS "Admins can manage petty cash entries" ON petty_cash_entries;
+DROP POLICY IF EXISTS "Employees can view their admin's petty cash" ON petty_cash_entries;
+DROP POLICY IF EXISTS "Users can insert petty cash" ON petty_cash_entries;
+DROP POLICY IF EXISTS "Users can view petty cash" ON petty_cash_entries;
+DROP POLICY IF EXISTS "Admins can delete petty cash" ON petty_cash_entries;
+DROP POLICY IF EXISTS "Employees can spend petty cash" ON petty_cash_entries;
+DROP POLICY IF EXISTS "Employees can manage own petty cash entries" ON petty_cash_entries;
+
+ALTER TABLE petty_cash_entries ENABLE ROW LEVEL SECURITY;
+
+-- 1. SELECT: Users see their own entries, Admins see their team's entries, Employees see their Admin's entries
+CREATE POLICY "View petty cash entries" ON petty_cash_entries
+    FOR SELECT
+    USING (
+        (select auth.uid()) = user_id OR 
+        admin_id = (select auth.uid()) OR
+        admin_id IN (SELECT admin_id FROM employees WHERE user_id = (select auth.uid()))
+    );
+
+-- 2. INSERT: Users can insert if valid admin link
+CREATE POLICY "Insert petty cash entries" ON petty_cash_entries
+    FOR INSERT
+    WITH CHECK (
+        (select auth.uid()) = user_id AND
+        admin_id IN (
+            SELECT admin_id FROM employees WHERE user_id = (select auth.uid())
+            UNION SELECT (select auth.uid()) -- Self-admin
+        )
+    );
+
+-- 3. UPDATE/DELETE: Users manage their own, Admins manage their team's
+CREATE POLICY "Manage petty cash entries" ON petty_cash_entries
+    FOR DELETE
+    USING ((select auth.uid()) = user_id OR admin_id = (select auth.uid()));
+
+CREATE POLICY "Update petty cash entries" ON petty_cash_entries
+    FOR UPDATE
     USING ((select auth.uid()) = user_id OR admin_id = (select auth.uid()));
 
 -- 3. Ensure sequences are synced

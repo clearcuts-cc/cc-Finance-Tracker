@@ -144,12 +144,12 @@ class PettyCashManager {
      */
     async loadFundAllocations() {
         try {
-            // We need to fetch entries where is_petty_cash = true
-            // This relies on the main finance_entries table
+            // We need to fetch entries where is_petty_cash = true OR client_name = 'Petty Cash'
+            // This covers both strict toggle usage and manual naming convention
             const { data, error } = await supabaseClient
                 .from('finance_entries')
-                .select('amount, date, description')
-                .eq('is_petty_cash', true); // Boolean flag created in SQL migration
+                .select('amount, date, description, client_name')
+                .or('is_petty_cash.eq.true,client_name.eq.Petty Cash');
 
             if (error) throw error;
             this.fundAllocations = data || [];
