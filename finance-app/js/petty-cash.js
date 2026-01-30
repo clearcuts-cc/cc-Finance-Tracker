@@ -10,6 +10,10 @@ const pettyCashManager = {
     entries: [],
     employees: [],
     balance: 0,
+    filters: {
+        search: '',
+        status: ''
+    },
 
     async init() {
         console.log('Initializing Petty Cash Manager...');
@@ -73,6 +77,20 @@ const pettyCashManager = {
             this.dom.expenseForm.addEventListener('submit', (e) => this.handleExpenseSubmit(e));
         }
 
+        // Filters
+        ['pcFilterStatus', 'pcFilterStartDate', 'pcFilterEndDate'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('change', () => this.filterAndRender());
+        });
+
+        document.getElementById('pcClearFilters')?.addEventListener('click', () => {
+            ['pcFilterStatus', 'pcFilterStartDate', 'pcFilterEndDate'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+            this.filterAndRender();
+        });
+
         // Close on outside click
         window.addEventListener('click', (e) => {
             if (e.target === this.dom.fundModal) this.closeModal('fund');
@@ -83,17 +101,13 @@ const pettyCashManager = {
     openModal(type) {
         if (type === 'fund' && this.dom.fundModal) {
             this.dom.fundForm.reset();
-            // Set default date
             const dateInput = document.getElementById('pcFundDate');
             if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
-
             this.dom.fundModal.classList.add('active');
         } else if (type === 'expense' && this.dom.expenseModal) {
             this.dom.expenseForm.reset();
-            // Set default date
             const dateInput = document.getElementById('pcExpenseDate');
             if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
-
             this.dom.expenseModal.classList.add('active');
         }
     },
@@ -108,7 +122,6 @@ const pettyCashManager = {
 
     async loadEmployees() {
         try {
-            // Use existing dataLayer from employees.js / data-api.js if available
             if (window.dataLayer && window.dataLayer.getAllEmployees) {
                 this.employees = await window.dataLayer.getAllEmployees();
                 this.populateEmployeeSelect();
@@ -123,8 +136,6 @@ const pettyCashManager = {
         if (!select) return;
 
         select.innerHTML = '<option value="">-- Select Employee --</option>';
-
-        // Add "Me / Admin" option
         const adminOption = document.createElement('option');
         adminOption.value = 'admin';
         adminOption.textContent = 'Me (Admin)';
@@ -133,7 +144,7 @@ const pettyCashManager = {
         if (this.employees && this.employees.length > 0) {
             this.employees.forEach(emp => {
                 const option = document.createElement('option');
-                option.value = emp.id; // employee table id
+                option.value = emp.id;
                 option.textContent = emp.name;
                 select.appendChild(option);
             });
@@ -146,62 +157,138 @@ const pettyCashManager = {
             const { data, error } = await supabaseClient
                 .from('petty_cash_entries')
                 .select('*')
-                .order('date', { ascending: false });
+                .order('date', { ascending: false })
+                .order('created_at', { ascending: false });
 
             if (error) throw error;
 
             this.entries = data || [];
-            this.calculateBalance();
-            this.render();
+            this.filterAndRender();
         } catch (error) {
             console.error('Error loading petty cash:', error);
             showToast('Failed to load petty cash data', 'error');
         }
     },
 
-    calculateBalance() {
+    filterAndRender() {
+        // Get filter values
+        const statusFilter = document.getElementById('pcFilterStatus')?.value || '';
+        const startDate = document.getElementById('pcFilterStartDate')?.value || '';
+        const endDate = document.getElementById('pcFilterEndDate')?.value || '';
+
+        const displayedEntries = this.entries.filter(entry => {
+            let matchesStatus = true;
+            if (statusFilter) {
+                // Handle legacy null status as 'approved'
+                const status = entry.status || 'approved';
+                matchesStatus = status === statusFilter;
+            }
+
+            let matchesDate = true;
+            if (startDate) {
+                matchesDate = matchesDate && entry.date >= startDate;
+            }
+            if (endDate) {
+                matchesDate = matchesDate && entry.date <= endDate;
+            }
+
+            return matchesStatus && matchesDate;
+        });
+
+        this.calculateBalance(displayedEntries);
+        this.render(displayedEntries);
+    },
+
+    calculateBalance(entriesToCalculate) {
         let totalFunds = 0;
         let totalExpenses = 0;
 
-        this.entries.forEach(entry => {
-            const amount = parseFloat(entry.amount) || 0;
-            if (entry.transaction_type === 'add_fund') {
-                totalFunds += amount;
-            } else if (entry.transaction_type === 'expense') {
-                totalExpenses += amount;
+        const entries = entriesToCalculate || this.entries;
+
+        entries.forEach(entry => {
+            // Only count approved entries for balance
+            if (entry.status !== 'declined') { // Include pending in balance? Usually Pending expenses subtract from balance immediately or wait?
+                // Standard logic: Pending expenses might not deduct yet, BUT for Petty Cash usually keys are handed over.
+                // However, to keep it clean: Only APPROVED Funds add to balance. 
+                // ALL Non-Declined Expenses subtract (conservative view).
+                const amount = parseFloat(entry.amount) || 0;
+
+                if (entry.transaction_type === 'add_fund') {
+                    // Only confirmed funds count
+                    if (entry.status === 'approved') {
+                        totalFunds += amount;
+                    }
+                } else if (entry.transaction_type === 'expense') {
+                    // Subtract pending expenses too so we don't overspend
+                    if (entry.status !== 'declined') {
+                        totalExpenses += amount;
+                    }
+                }
             }
         });
 
         this.balance = totalFunds - totalExpenses;
     },
 
-    render() {
+    async render(entriesToRender) {
+
+        const entries = entriesToRender || this.entries;
+
         // Update Balance
         if (this.dom.balanceDisplay) {
             this.dom.balanceDisplay.textContent = formatCurrency(this.balance, window.appCurrency || '₹');
             this.dom.balanceDisplay.style.color = this.balance < 0 ? 'var(--color-danger)' : 'var(--color-success)';
         }
 
+        const isAdmin = await dataLayer.isAdmin();
+
         // Update Table
         if (this.dom.tableBody) {
             this.dom.tableBody.innerHTML = '';
 
-            if (this.entries.length === 0) {
+            if (entries.length === 0) {
                 if (this.dom.emptyState) this.dom.emptyState.classList.remove('hidden');
             } else {
                 if (this.dom.emptyState) this.dom.emptyState.classList.add('hidden');
 
-                this.entries.forEach(entry => {
+                entries.forEach(entry => {
                     const row = document.createElement('tr');
                     const isFund = entry.transaction_type === 'add_fund';
                     const amountClass = isFund ? 'text-success' : 'text-danger';
                     const amountPrefix = isFund ? '+' : '-';
 
-                    // Determine what to show in "Added By" / "Employee" column
                     let addedBy = entry.employee_name;
                     if (!addedBy) {
                         addedBy = isFund ? 'Admin (Deposit)' : 'Admin';
                     }
+
+                    // Status Badge Logic
+                    const status = entry.status || 'approved'; // Default compatibility
+                    let badgeClass = 'badge-success';
+                    if (status === 'pending') badgeClass = 'badge-warning';
+                    if (status === 'declined') badgeClass = 'badge-danger';
+
+                    // Action Buttons Logic
+                    let actionsHtml = '';
+
+                    // Approve/Decline for Admin on Pending items
+                    if (isAdmin && status === 'pending') {
+                        actionsHtml += `
+                            <button class="btn-icon text-success" onclick="pettyCashManager.updateStatus('${entry.id}', 'approved')" title="Approve">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            </button>
+                            <button class="btn-icon text-danger" onclick="pettyCashManager.updateStatus('${entry.id}', 'declined')" title="Decline">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"></path></svg>
+                            </button>
+                        `;
+                    }
+
+                    // Delete button (Admin or own pending)
+                    actionsHtml += `
+                        <button class="btn-icon delete-btn" onclick="pettyCashManager.deleteEntry('${entry.id}')" title="Delete">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        </button>
+                    `;
 
                     row.innerHTML = `
                         <td>${formatDate(entry.date)}</td>
@@ -211,10 +298,11 @@ const pettyCashManager = {
                         <td class="${amountClass}" style="font-weight: 600;">
                             ${amountPrefix}${formatCurrency(entry.amount, window.appCurrency || '₹')}
                         </td>
+                        <td><span class="badge ${badgeClass}">${status.charAt(0).toUpperCase() + status.slice(1)}</span></td>
                         <td>
-                             <button class="btn-icon delete-btn" onclick="pettyCashManager.deleteEntry('${entry.id}')" title="Delete">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                            </button>
+                            <div class="action-buttons">
+                                ${actionsHtml}
+                            </div>
                         </td>
                     `;
                     this.dom.tableBody.appendChild(row);
@@ -228,9 +316,6 @@ const pettyCashManager = {
         const amount = document.getElementById('pcFundAmount').value;
         const description = document.getElementById('pcFundDescription').value;
         const date = document.getElementById('pcFundDate').value;
-
-        // Optional: you could add a "Source" field handling if needed, 
-        // e.g. bank vs cash. For now forcing 'add_fund'.
 
         await this.addTransaction({
             amount,
@@ -257,7 +342,6 @@ const pettyCashManager = {
             if (!confirm(confirmMsg)) return;
         }
 
-        // Determine employee name and ID
         let employeeName = 'Admin';
         let employeeId = null;
 
@@ -286,16 +370,28 @@ const pettyCashManager = {
         try {
             const user = await supabaseClient.auth.getUser();
             const userId = user.data.user?.id;
+            const isAdmin = await dataLayer.isAdmin();
 
             let adminId = userId;
-            // Try to get admin_id from local profile if available
             const profile = JSON.parse(localStorage.getItem('finance_user_profile') || '{}');
             if (profile.admin_id) adminId = profile.admin_id;
+
+            // Determine status
+            let status = 'approved'; // Default for Admin
+
+            // If expense added BY employee (or for employee?), it might need approval
+            // Current rule: If Admin adds -> Approved. If Employee adds -> Pending.
+            if (!isAdmin) {
+                status = 'pending';
+            }
+
+            // Allow Admin to add on behalf of employee as "Approved" by default
 
             const entry = {
                 ...data,
                 user_id: userId,
                 admin_id: adminId,
+                status: status,
                 created_at: new Date().toISOString()
             };
 
@@ -305,12 +401,35 @@ const pettyCashManager = {
 
             if (error) throw error;
 
-            showToast('Transaction added successfully', 'success');
+            showToast(status === 'pending' ? 'Expense submitted for approval' : 'Transaction added successfully', 'success');
             await this.loadData();
 
         } catch (error) {
             console.error('Error adding transaction:', error);
             showToast('Failed to add transaction', 'error');
+        }
+    },
+
+    async updateStatus(id, newStatus) {
+        if (!confirm(`Are you sure you want to ${newStatus === 'approved' ? 'approve' : 'decline'} this entry?`)) return;
+
+        try {
+            // If declining an expense, it shouldn't affect balance (balance calc handles this by filtering declined)
+            // If approving, it stays as expense.
+
+            const { error } = await supabaseClient
+                .from('petty_cash_entries')
+                .update({ status: newStatus })
+                .eq('id', id);
+
+            if (error) throw error;
+
+            showToast(`Entry ${newStatus}`, 'success');
+            await this.loadData();
+
+        } catch (error) {
+            console.error('Error updating status:', error);
+            showToast('Failed to update status', 'error');
         }
     },
 

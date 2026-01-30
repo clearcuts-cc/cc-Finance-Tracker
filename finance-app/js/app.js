@@ -847,8 +847,7 @@ class App {
             type: document.getElementById('entryType').value,
             status: document.getElementById('entryStatus')?.value || 'pending', // Handle if hidden
             paymentMode: document.getElementById('entryPaymentMode').value,
-            created_by_name: formattedCreatedBy,
-            isPettyCash: document.getElementById('addToPettyCashToggle')?.checked || false
+            created_by_name: formattedCreatedBy
         };
 
         try {

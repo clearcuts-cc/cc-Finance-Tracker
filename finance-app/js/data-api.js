@@ -332,9 +332,7 @@ class DataLayerAPI {
             status: entry.status || 'pending', // Payment status
             payment_mode: entry.paymentMode,
             approval_status: approvalStatus,
-            created_by_name: await this.getCurrentUserName(),
-            // New Petty Cash Flag
-            is_petty_cash: entry.isPettyCash || false
+            created_by_name: await this.getCurrentUserName()
         };
 
         const { data, error } = await supabaseClient
