@@ -32,6 +32,55 @@ class App {
     }
 
     /**
+     * Show custom confirmation modal
+     * @param {string} title 
+     * @param {string} message 
+     * @returns {Promise<boolean>}
+     */
+    showConfirmationModal(title, message) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('confirmationModal');
+            const titleEl = document.getElementById('confirmTitle');
+            const messageEl = document.getElementById('confirmMessage');
+            const confirmBtn = document.getElementById('confirmYesBtn');
+            const cancelBtn = document.getElementById('confirmCancelBtn');
+            const closeBtn = document.getElementById('closeConfirmModal');
+
+            if (!modal) {
+                // Fallback if modal not present
+                resolve(window.confirm(message));
+                return;
+            }
+
+            titleEl.textContent = title || 'Confirm Action';
+            messageEl.textContent = message || 'Are you sure you want to proceed?';
+
+            const cleanup = () => {
+                modal.classList.remove('active');
+                confirmBtn.removeEventListener('click', onConfirm);
+                cancelBtn.removeEventListener('click', onCancel);
+                closeBtn.removeEventListener('click', onCancel);
+            };
+
+            const onConfirm = () => {
+                cleanup();
+                resolve(true);
+            };
+
+            const onCancel = () => {
+                cleanup();
+                resolve(false);
+            };
+
+            confirmBtn.addEventListener('click', onConfirm);
+            cancelBtn.addEventListener('click', onCancel);
+            closeBtn.addEventListener('click', onCancel);
+
+            modal.classList.add('active');
+        });
+    }
+
+    /**
      * Initialize the application
      */
     async init() {
@@ -870,7 +919,7 @@ class App {
      * Delete an entry
      */
     async deleteEntry(id) {
-        if (!confirm('Are you sure you want to delete this entry?')) return;
+        if (!(await this.showConfirmationModal('Delete Entry', 'Are you sure you want to delete this entry?'))) return;
 
         try {
             await dataLayer.deleteEntry(id);
@@ -1238,10 +1287,11 @@ class App {
                     const type = btn.dataset.type;
                     try {
                         if (type === 'cancel') {
+                            if (!(await this.showConfirmationModal('Cancel Deletion Request', 'Are you sure you want to cancel this deletion request?'))) return;
                             await dataLayer.declineDeletionRequest(id);
                             showToast('Deletion request cancelled', 'info');
                         } else {
-                            if (!confirm('Are you sure you want to decline this entry?')) return;
+                            if (!(await this.showConfirmationModal('Decline Entry', 'Are you sure you want to decline this entry?'))) return;
                             await dataLayer.declineEntry(id);
                             showToast('Entry declined', 'info');
                         }

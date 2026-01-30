@@ -106,7 +106,7 @@ class ClientsManager {
      * Delete client (or Decline if pending)
      */
     async deleteClient(id) {
-        if (!confirm('Are you sure you want to delete this client?')) return;
+        if (!(await app.showConfirmationModal('Delete Client', 'Are you sure you want to delete this client?'))) return;
 
         try {
             await dataLayer.deleteClient(id);
@@ -134,7 +134,7 @@ class ClientsManager {
      * Decline a pending client (Deletes it)
      */
     async declineClient(id) {
-        if (!confirm('Decline and remove this client request?')) return;
+        if (!(await app.showConfirmationModal('Decline Client', 'Decline and remove this client request?'))) return;
         try {
             await dataLayer.deleteClient(id);
             showToast('Client request declined', 'info');

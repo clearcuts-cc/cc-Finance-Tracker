@@ -417,7 +417,7 @@ const pettyCashManager = {
     },
 
     async updateStatus(id, newStatus) {
-        if (!confirm(`Are you sure you want to ${newStatus === 'approved' ? 'approve' : 'decline'} this entry?`)) return;
+        if (!(await app.showConfirmationModal('Update Status', `Are you sure you want to ${newStatus === 'approved' ? 'approve' : 'decline'} this entry?`))) return;
 
         try {
             // If declining an expense, it shouldn't affect balance (balance calc handles this by filtering declined)
@@ -446,7 +446,7 @@ const pettyCashManager = {
     },
 
     async deleteEntry(id) {
-        if (!confirm('Are you sure you want to delete this entry?')) return;
+        if (!(await app.showConfirmationModal('Delete Entry', 'Are you sure you want to delete this entry?'))) return;
 
         try {
             const { error } = await supabaseClient

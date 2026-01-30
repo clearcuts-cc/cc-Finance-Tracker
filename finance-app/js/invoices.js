@@ -992,7 +992,7 @@ class InvoiceManager {
      * Delete an invoice
      */
     async deleteInvoice(id) {
-        if (!confirm('Are you sure you want to delete this invoice?')) return;
+        if (!(await app.showConfirmationModal('Delete Invoice', 'Are you sure you want to delete this invoice?'))) return;
 
         try {
             await dataLayer.deleteInvoice(id);
