@@ -42,18 +42,18 @@ const toDbInvoice = (invoice) => ({
     client_email: invoice.clientEmail,
     client_address: invoice.clientAddress,
     client_phone: invoice.clientPhone,
-    client_id: invoice.clientId, // Store reference if available
+    client_id: invoice.clientId || null, // Store reference if available
     agency_name: invoice.agencyName,
     agency_contact: invoice.agencyContact,
     agency_address: invoice.agencyAddress,
     agency_logo: invoice.agencyLogo,
-    subtotal: invoice.subtotal,
-    tax_percent: invoice.taxPercent,
-    tax_amount: invoice.taxAmount,
-    discount_percent: invoice.discountPercent,
-    discount_amount: invoice.discountAmount,
-    grand_total: invoice.grandTotal,
-    payment_status: invoice.paymentStatus
+    subtotal: parseFloat(invoice.subtotal) || 0,
+    tax_percent: parseFloat(invoice.taxPercent) || 0,
+    tax_amount: parseFloat(invoice.taxAmount) || 0,
+    discount_percent: parseFloat(invoice.discountPercent) || 0,
+    discount_amount: parseFloat(invoice.discountAmount) || 0,
+    grand_total: parseFloat(invoice.grandTotal) || 0,
+    payment_status: invoice.paymentStatus || 'pending'
 });
 
 const fromDbInvoice = (row) => ({
@@ -799,7 +799,14 @@ class DataLayerAPI {
             .select()
             .single();
 
-        if (invoiceError) this.handleError(invoiceError, 'Add invoice');
+        if (invoiceError) {
+            console.error('Invoice Insert Error Detail:', invoiceError);
+            this.handleError(invoiceError, 'Add invoice');
+        }
+
+        if (!invoiceResult) {
+            throw new Error('Failed to create invoice record - no data returned.');
+        }
 
         // Insert services if present
         if (services && services.length > 0) {

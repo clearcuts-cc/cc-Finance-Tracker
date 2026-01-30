@@ -142,10 +142,13 @@ class InvoiceManager {
         data.created_by_name = formattedCreatedBy;
 
         try {
-            await dataLayer.addInvoice(data);
+            console.log('Sending invoice to dataLayer:', data);
+            const savedInvoice = await dataLayer.addInvoice(data);
+            console.log('Invoice saved:', savedInvoice);
 
             // Create finance entry if needed
             if (data.grandTotal > 0) {
+                console.log('Creating finance entry for invoice...');
                 await dataLayer.addEntry({
                     date: data.invoiceDate,
                     clientName: data.clientName,
@@ -154,8 +157,9 @@ class InvoiceManager {
                     type: 'income',
                     status: data.paymentStatus === 'paid' ? 'received' : 'pending',
                     paymentMode: 'bank_transfer',
-                    created_by_name: formattedCreatedBy // Also save to entry
+                    created_by_name: formattedCreatedBy
                 });
+                console.log('Finance entry created.');
             }
 
             showToast('Invoice saved successfully', 'success');
@@ -165,13 +169,12 @@ class InvoiceManager {
             // Restore name after reset
             document.getElementById('invoiceLoginName').value = loginName;
 
-            // Update charts
             if (typeof chartsManager !== 'undefined') {
                 chartsManager.updateAllCharts();
             }
         } catch (error) {
-            console.error('Error saving invoice:', error);
-            showToast('Failed to save invoice', 'error');
+            console.error('CRITICAL: Error saving invoice sequence:', error);
+            showToast(`Failed to save: ${error.message || 'Unknown error'}`, 'error');
         }
     }
 
