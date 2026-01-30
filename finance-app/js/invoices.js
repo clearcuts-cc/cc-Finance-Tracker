@@ -409,15 +409,16 @@ class InvoiceManager {
                 
                 <div class="invoice-parties-preview">
                     <div class="invoice-party-preview">
-                        <h4>Bill To</h4>
-                        <p><strong>${data.clientName || '-'}</strong></p>
-                        <p>${(data.clientAddress || '').replace(/\n/g, '<br>')}</p>
-                    </div>
-                    <div class="invoice-party-preview">
-                        <h4>Payment Status</h4>
-                        <p><span class="badge badge-${data.paymentStatus}">${data.paymentStatus}</span></p>
-                    </div>
+                    <h4>Bill To</h4>
+                    <p><strong>${data.clientName || '-'}</strong></p>
+                    <p>${(data.clientAddress || '').replace(/\n/g, '<br>')}</p>
                 </div>
+                <div class="invoice-party-preview">
+                    <h4>Invoice Info</h4>
+                    <p><strong>Status:</strong> <span class="badge badge-${data.paymentStatus}">${data.paymentStatus}</span></p>
+                    <p><strong>Issued By:</strong> ${data.created_by_name || 'Admin'}</p>
+                </div>
+            </div>
                 
                 <div class="invoice-items-preview">
                     <table class="invoice-items-table-preview">
@@ -835,7 +836,6 @@ class InvoiceManager {
      * Render invoice history
      */
     async renderInvoiceHistory() {
-        // Security Check: Only Admins can see invoice history
         const isAdmin = await dataLayer.isAdmin();
         const container = document.getElementById('invoiceHistoryList');
         const emptyState = document.getElementById('invoicesEmptyState');
@@ -844,12 +844,10 @@ class InvoiceManager {
         if (!isAdmin) {
             if (container) container.innerHTML = '';
             if (emptyState) emptyState.style.display = 'none';
-            // Hide the entire history section if possible
             if (historySection) historySection.style.display = 'none';
             return;
         }
 
-        // Show section for admins
         if (historySection) historySection.style.display = 'block';
 
         const invoices = await dataLayer.getAllInvoices();
@@ -869,7 +867,8 @@ class InvoiceManager {
                     <span class="badge badge-${inv.paymentStatus}">${inv.paymentStatus}</span>
                 </div>
                 <div class="invoice-history-item-body">
-                    <div>${inv.clientName}</div>
+                    <div style="font-weight: 500;">${inv.clientName}</div>
+                    <div style="font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 4px;">Created by: ${inv.createdByName || 'Unknown'}</div>
                     <div>${formatDate(inv.invoiceDate)} • ${currency}${inv.grandTotal.toFixed(2)}</div>
                 </div>
                 <div class="invoice-history-actions">

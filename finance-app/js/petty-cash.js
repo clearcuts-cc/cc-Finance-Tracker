@@ -289,15 +289,21 @@ const pettyCashManager = {
                         `;
                     }
 
-                    // Delete button (Admin or own pending)
-                    actionsHtml += `
-                        <button class="btn-icon delete-btn" onclick="pettyCashManager.deleteEntry('${entry.id}')" title="Delete">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                        </button>
-                    `;
+                    // Delete button: Admins can delete anything. Employees can only delete their own PENDING entries.
+                    const isOwnEntry = entry.user_id === (await dataLayer.getCurrentUserId());
+                    const canDelete = isAdmin || (status === 'pending' && isOwnEntry);
+
+                    if (canDelete) {
+                        actionsHtml += `
+                            <button class="btn-icon delete-btn" onclick="pettyCashManager.deleteEntry('${entry.id}')" title="Delete">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                            </button>
+                        `;
+                    }
 
                     row.innerHTML = `
                         <td>${formatDate(entry.date)}</td>
+                        <td><span class="badge ${isFund ? 'badge-primary' : 'badge-secondary'}" style="margin-bottom: 4px; display: inline-block;">${isFund ? 'Fund IN' : 'Expense OUT'}</span></td>
                         <td><span style="font-weight: 500;">${addedBy}</span></td>
                         <td>${entry.description}</td>
                         <td>${entry.category || '-'}</td>
@@ -323,13 +329,16 @@ const pettyCashManager = {
         const description = document.getElementById('pcFundDescription').value;
         const date = document.getElementById('pcFundDate').value;
 
+        const userName = await dataLayer.getCurrentUserName();
+        const isAdmin = await dataLayer.isAdmin();
+
         await this.addTransaction({
             amount,
             description,
             date,
             transaction_type: 'add_fund',
             category: 'Fund Deposit',
-            employee_name: 'Admin'
+            employee_name: isAdmin ? 'Admin' : userName
         });
 
         this.closeModal('fund');
@@ -345,7 +354,7 @@ const pettyCashManager = {
 
         if (parseFloat(amount) > this.balance) {
             const confirmMsg = `Warning: Expense amount (${formatCurrency(amount)}) exceeds available balance (${formatCurrency(this.balance)}). Continue?`;
-            if (!confirm(confirmMsg)) return;
+            if (!(await app.showConfirmationModal('Balance Overlimit', confirmMsg))) return;
         }
 
         let employeeName = 'Admin';
@@ -431,13 +440,7 @@ const pettyCashManager = {
             if (error) throw error;
 
             showToast(`Entry ${newStatus}`, 'success');
-
-            // Optimistic update
-            const entryIndex = this.entries.findIndex(e => e.id == id);
-            if (entryIndex !== -1) {
-                this.entries[entryIndex].status = newStatus;
-            }
-            this.filterAndRender(); // This will recalculate balance if needed
+            await this.loadData(); // Re-fetch to ensure perfect sync and balance accuracy
 
         } catch (error) {
             console.error('Error updating status:', error);
@@ -446,6 +449,19 @@ const pettyCashManager = {
     },
 
     async deleteEntry(id) {
+        const entry = this.entries.find(e => e.id == id);
+        if (!entry) return;
+
+        const isAdmin = await dataLayer.isAdmin();
+        const currentUserId = await dataLayer.getCurrentUserId();
+
+        // Security check
+        const isAllowedStatus = entry.status === 'pending' || entry.status === 'declined';
+        if (!isAdmin && (!isAllowedStatus || entry.user_id !== currentUserId)) {
+            showToast('You can only delete your own pending or declined entries', 'error');
+            return;
+        }
+
         if (!(await app.showConfirmationModal('Delete Entry', 'Are you sure you want to delete this entry?'))) return;
 
         try {

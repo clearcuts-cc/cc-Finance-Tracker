@@ -39,8 +39,10 @@ const toDbInvoice = (invoice) => ({
     invoice_date: invoice.invoiceDate,
     due_date: invoice.dueDate,
     client_name: invoice.clientName,
+    client_email: invoice.clientEmail,
     client_address: invoice.clientAddress,
     client_phone: invoice.clientPhone,
+    client_id: invoice.clientId, // Store reference if available
     agency_name: invoice.agencyName,
     agency_contact: invoice.agencyContact,
     agency_address: invoice.agencyAddress,
@@ -73,6 +75,11 @@ const fromDbInvoice = (row) => ({
     discountAmount: row.discount_amount,
     grandTotal: row.grand_total,
     paymentStatus: row.payment_status,
+    clientEmail: row.client_email,
+    clientId: row.client_id,
+    createdBy: row.created_by,
+    createdByName: row.created_by_name,
+    createdByEmail: row.created_by_email,
     services: row.invoice_services?.map(s => ({
         id: s.id,
         name: s.name,
@@ -325,14 +332,14 @@ class DataLayerAPI {
             user_id: user.id,
             admin_id: await this.getAdminId(), // Key for RLS
             date: entry.date,
-            client_name: entry.client,
+            client_name: entry.client || entry.clientName,
             description: entry.description,
             amount: entry.amount,
             type: entry.type,
             status: entry.status || 'pending', // Payment status
             payment_mode: entry.paymentMode,
             approval_status: approvalStatus,
-            created_by_name: await this.getCurrentUserName()
+            created_by_name: entry.created_by_name || await this.getCurrentUserName()
         };
 
         const { data, error } = await supabaseClient
