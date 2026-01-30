@@ -1381,6 +1381,7 @@ const DATA_STORES = {
 
 // Create and export singleton instance
 const dataLayer = new DataLayerAPI();
+window.dataLayer = dataLayer;
 
 // Helper functions for formatting are in main.js
 // Removed to avoid re-declaration errors

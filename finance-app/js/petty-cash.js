@@ -453,4 +453,6 @@ const pettyCashManager = {
     }
 };
 
+window.pettyCashManager = pettyCashManager;
+
 // Auto-init removed; handled by app.js
