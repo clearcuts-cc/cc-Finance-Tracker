@@ -465,10 +465,6 @@ class InvoiceManager {
                     <p><strong>${data.clientName || '-'}</strong></p>
                     <p>${(data.clientAddress || '').replace(/\n/g, '<br>')}</p>
                 </div>
-                <div class="invoice-party-preview">
-                    <h4>Invoice Info</h4>
-                    <p><strong>Issued By:</strong> ${data.created_by_name || 'Admin'}</p>
-                </div>
             </div>
                 
                 <div class="invoice-items-preview">
@@ -900,10 +896,6 @@ class InvoiceManager {
                         <h4>Bill To</h4>
                         <p><strong>${invoice.clientName || '-'}</strong></p>
                         <p>${(invoice.clientAddress || '').replace(/\n/g, '<br>')}</p>
-                    </div>
-                    <div class="invoice-party-preview">
-                        <h4>Invoice Info</h4>
-                        <p><strong>Issued By:</strong> ${invoice.createdByName || 'Admin'}</p>
                     </div>
                 </div>
                 

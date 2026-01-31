@@ -128,7 +128,24 @@ class ProfileManager {
      */
     updateHeaderAvatar() {
         const avatarEl = document.querySelector('.user-profile .avatar');
-        if (!avatarEl || !this.currentUser) return;
+        const nameEl = document.getElementById('headerUserName');
+        const roleEl = document.getElementById('headerUserRole');
+
+        if (!this.currentUser) return;
+
+        // Update Name and Role
+        if (nameEl) nameEl.textContent = this.currentUser.name;
+        if (roleEl) {
+            roleEl.textContent = this.currentUser.role === 'admin' ? 'Admin' : 'Employee';
+            // Optional: change color based on role
+            if (this.currentUser.role === 'admin') {
+                roleEl.style.color = 'var(--color-primary)';
+            } else {
+                roleEl.style.color = 'var(--color-info)';
+            }
+        }
+
+        if (!avatarEl) return;
 
         if (this.currentUser.avatar) {
             avatarEl.innerHTML = `<img src="${this.currentUser.avatar}" alt="${this.currentUser.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
