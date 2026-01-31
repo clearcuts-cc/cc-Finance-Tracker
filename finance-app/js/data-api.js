@@ -117,6 +117,35 @@ class DataLayerAPI {
     }
 
     /**
+     * Setup real-time subscriptions for all tables
+     */
+    setupRealtime() {
+        console.log('Setting up Supabase Realtime subscriptions...');
+
+        const tables = Object.values(DATA_STORES);
+
+        const channel = supabaseClient
+            .channel('db-changes')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public' },
+                (payload) => {
+                    console.log('Realtime change detected:', payload);
+                    const table = payload.table;
+                    // Notify any local listeners for this table
+                    this.notifyListeners(table);
+                }
+            )
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    console.log('Successfully subscribed to real-time changes');
+                }
+            });
+
+        return channel;
+    }
+
+    /**
      * Get map of all users for enriching entries
      */
     async getUsersMap() {
@@ -1431,7 +1460,8 @@ const DATA_STORES = {
     EMPLOYEES: 'employees',
     SETTINGS: 'settings',
     INVESTMENTS: 'investments',
-    NOTIFICATIONS: 'notifications'
+    NOTIFICATIONS: 'notifications',
+    PETTY_CASH: 'petty_cash_entries'
 };
 
 // Create and export singleton instance

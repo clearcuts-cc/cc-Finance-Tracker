@@ -160,6 +160,9 @@ class App {
                 window.pettyCashManager.init();
             }
 
+            // Setup Realtime tracking for instant updates
+            dataLayer.setupRealtime();
+
             // Setup role-based visibility
             console.log('Setting up role-based visibility...');
             await this.setupRoleBasedUI();

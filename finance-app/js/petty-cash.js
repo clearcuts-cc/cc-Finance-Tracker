@@ -21,6 +21,11 @@ const pettyCashManager = {
         this.bindEvents();
         await this.loadEmployees();
         await this.loadData();
+
+        // Listen for real-time changes
+        if (window.dataLayer) {
+            window.dataLayer.subscribe('petty_cash_entries', () => this.loadData());
+        }
     },
 
     cacheDOM() {
