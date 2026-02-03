@@ -1,0 +1,302 @@
+/* ==================== COMPREHENSIVE MOBILE OPTIMIZATION ==================== */
+@media (max-width: 768px) {
+
+    /* ===== Root & Typography ===== */
+    :root {
+        --header-height: 60px;
+        --sidebar-width: 280px;
+        --spacing-xs: 6px;
+        --spacing-sm: 8px;
+        --spacing-md: 12px;
+        --spacing-lg: 16px;
+        --spacing-xl: 20px;
+        --font-size-xs: 11px;
+        --font-size-sm: 13px;
+        --font-size-base: 15px;
+        --font-size-lg: 17px;
+        --font-size-xl: 19px;
+        --font-size-2xl: 22px;
+        --font-size-3xl: 26px;
+    }
+
+    body {
+        font-size: var(--font-size-base);
+        overflow-x: hidden;
+    }
+
+    /* ===== Header Top Fixed ===== */
+    .header {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        height: var(--header-height) !important;
+        border-radius: 0 !important;
+        padding: 0 12px !important;
+        border: none !important;
+        border-bottom: 1px solid var(--color-border) !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+        z-index: 1000 !important;
+    }
+
+    .header-left,
+    .header-right {
+        gap: 8px !important;
+    }
+
+    .page-title {
+        font-size: 17px !important;
+        font-weight: 700 !important;
+    }
+
+    .search-box {
+        display: none !important;
+    }
+
+    /* ===== Sidebar Hidden By Default ===== */
+    .sidebar {
+        position: fixed !important;
+        left: 0 !important;
+        top: 0 !important;
+        height: 100vh !important;
+        width: 280px !important;
+        transform: translateX(-100%) !important;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        box-shadow: 4px 0 12px rgba(0, 0, 0, 0.15) !important;
+        z-index: 1100 !important;
+    }
+
+    .sidebar.mobile-open {
+        transform: translateX(0) !important;
+    }
+
+    /* ===== Main Content No Margin ===== */
+    .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+
+    .page-container {
+        padding: calc(var(--header-height) + 16px) 12px 80px 12px !important;
+        min-height: 100vh;
+    }
+
+    /* ===== Stats Horizontal Scroll ===== */
+    .stats-grid {
+        display: flex !important;
+        overflow-x: auto !important;
+        gap: 12px !important;
+        padding: 8px 4px 16px 4px !important;
+        margin: 0 -12px 16px -12px !important;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .stats-grid::-webkit-scrollbar {
+        height: 4px;
+    }
+
+    .stat-card {
+        flex: 0 0 240px !important;
+        scroll-snap-align: start;
+        padding: 16px !important;
+    }
+
+    .stat-card:first-child {
+        margin-left: 12px !important;
+    }
+
+    .stat-card:last-child {
+        margin-right: 12px !important;
+    }
+
+    /* ===== Tables As Cards ===== */
+    .entries-table-container,
+    .recent-transactions {
+        overflow: visible !important;
+        margin: 0 -12px !important;
+        padding: 0 !important;
+    }
+
+    .recent-transactions thead,
+    .entries-table thead {
+        display: none !important;
+    }
+
+    .recent-transactions tbody,
+    .entries-table tbody {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 12px !important;
+        padding: 0 12px !important;
+    }
+
+    .recent-transactions tr,
+    .entries-table tr {
+        display: flex !important;
+        flex-direction: column !important;
+        background: var(--color-bg-card) !important;
+        border: 1px solid var(--color-border) !important;
+        border-radius: 12px !important;
+        padding: 14px !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+    }
+
+    .recent-transactions td,
+    .entries-table td {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 8px 0 !important;
+        border: none !important;
+        font-size: 14px !important;
+    }
+
+    .recent-transactions td::before,
+    .entries-table td::before {
+        content: attr(data-label) !important;
+        font-weight: 600 !important;
+        color: var(--color-text-secondary) !important;
+        font-size: 12px !important;
+        text-transform: uppercase !important;
+    }
+
+    .recent-transactions td:last-child,
+    .entries-table td:last-child {
+        border-top: 1px solid var(--color-border);
+        padding-top: 12px !important;
+        margin-top: 8px !important;
+    }
+
+    /* ===== Filters Stack Vertically ===== */
+    .filters-bar {
+        flex-direction: column !important;
+        gap: 12px !important;
+        padding: 16px !important;
+        background: var(--color-bg-card);
+        border-radius: 12px !important;
+    }
+
+    .filter-group {
+        width: 100% !important;
+    }
+
+    .filter-select,
+    .filter-input {
+        width: 100% !important;
+        min-height: 46px !important;
+        padding: 12px 14px !important;
+        font-size: 15px !important;
+    }
+
+    /* ===== Action Buttons Full Width ===== */
+    .action-bar {
+        flex-direction: column !important;
+        gap: 12px !important;
+    }
+
+    .action-bar .btn {
+        width: 100% !important;
+        min-height: 50px !important;
+    }
+
+    /* ===== Modals Bottom Sheet ===== */
+    .modal-overlay {
+        padding: 0 !important;
+        align-items: flex-end !important;
+    }
+
+    .modal {
+        width: 100% !important;
+        max-height: 85vh !important;
+        margin: 0 !important;
+        border-radius: 20px 20px 0 0 !important;
+        padding: 20px 16px !important;
+    }
+
+    .modal-form .form-group input,
+    .modal-form .form-group select,
+    .modal-form .form-group textarea {
+        min-height: 48px !important;
+        padding: 12px 14px !important;
+        font-size: 16px !important;
+        /* Prevents iOS zoom */
+    }
+
+    .form-row {
+        flex-direction: column !important;
+        gap: 16px !important;
+    }
+
+    .modal-actions {
+        flex-direction: column-reverse !important;
+        gap: 10px !important;
+    }
+
+    .modal-actions .btn {
+        width: 100% !important;
+        min-height: 50px !important;
+    }
+
+    /* ===== All Buttons Touch-Friendly ===== */
+    .btn {
+        min-height: 48px !important;
+        padding: 12px 20px !important;
+        font-size: 15px !important;
+        touch-action: manipulation;
+    }
+
+    .action-btn {
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
+        min-height: 44px !important;
+    }
+
+    /* ===== Card Grids Single Column ===== */
+    .clients-grid,
+    .employees-list,
+    .pending-clients-grid {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 12px !important;
+    }
+
+    .client-card,
+    .employee-card {
+        width: 100% !important;
+        padding: 16px !important;
+    }
+
+    /* =====  Settings Export ===== */
+    .setting-item {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 12px !important;
+    }
+
+    .export-actions {
+        flex-direction: column !important;
+        gap: 10px !important;
+        width: 100% !important;
+    }
+
+    .export-select,
+    .export-actions .btn {
+        width: 100% !important;
+    }
+
+    /* ===== Prevent Horizontal Scroll ===== */
+    html,
+    body {
+        overflow-x: hidden !important;
+        width: 100% !important;
+    }
+
+    /* ===== Touch States Instead of Hover ===== */
+    .btn:active {
+        transform: scale(0.98) !important;
+        opacity: 0.9 !important;
+    }
+}
