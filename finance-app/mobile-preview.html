@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Mobile App UI Preview - FinanceFlow</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/mobile-optimize.css">
+    <style>
+        /* Demo specific styles */
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        .demo-badge {
+            position: fixed;
+            top: 70px;
+            right: 16px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 9999;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+
+        @media (min-width: 769px) {
+            body::before {
+                content: '📱 Resize browser to mobile size (max 768px) to see the mobile app UI';
+                display: block;
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: #6366f1;
+                color: white;
+                padding: 32px 48px;
+                border-radius: 16px;
+                font-size: 18px;
+                font-weight: 600;
+                text-align: center;
+                z-index: 99999;
+                box-shadow: 0 8px 32px rgba(99, 102, 241, 0.4);
+                max-width: 80%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Mobile App Header -->
+    <header class="header">
+        <div class="header-left">
+            <h1 class="page-title">Dashboard</h1>
+        </div>
+        <div class="header-right">
+            <div id="headerAvatar"
+                style="width: 36px; height: 36px; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 14px;">
+                JD</div>
+        </div>
+    </header>
+
+    <div class="demo-badge">MOBILE PREVIEW</div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="page-container">
+            <!-- Stats Section -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(99, 102, 241, 0.1);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"
+                            style="width: 24px; height: 24px;">
+                            <line x1="12" y1="1" x2="12" y2="23"></line>
+                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                        </svg>
+                    </div>
+                    <div class="stat-content">
+                        <h3>Total Balance</h3>
+                        <p>₹45,890</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(16, 185, 129, 0.1);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"
+                            style="width: 24px; height: 24px;">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                        </svg>
+                    </div>
+                    <div class="stat-content">
+                        <h3>Income</h3>
+                        <p>₹78,450</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(239, 68, 68, 0.1);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"
+                            style="width: 24px; height: 24px;">
+                            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                        </svg>
+                    </div>
+                    <div class="stat-content">
+                        <h3>Expenses</h3>
+                        <p>₹32,560</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Transactions -->
+            <div style="padding: 0 16px;">
+                <div class="section-header">
+                    <h3>Recent Transactions</h3>
+                </div>
+                <div class="recent-transactions">
+                    <table>
+                        <tbody>
+                            <tr>
+                                <td data-label="Date">2026-02-03</td>
+                                <td data-label="Client">Acme Corp</td>
+                                <td data-label="Description">Website Development</td>
+                                <td data-label="Amount" style="color: #10b981; font-weight: 600;">+₹15,000</td>
+                                <td data-label="Type">Income</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="action-btn edit">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7">
+                                                </path>
+                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z">
+                                                </path>
+                                            </svg>
+                                        </button>
+                                        <button class="action-btn delete">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <polyline points="3 6 5 6 21 6"></polyline>
+                                                <path
+                                                    d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                                </path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td data-label="Date">2026-02-02</td>
+                                <td data-label="Client">Tech Solutions Ltd</td>
+                                <td data-label="Description">Monthly Hosting</td>
+                                <td data-label="Amount" style="color: #ef4444; font-weight: 600;">-₹5,500</td>
+                                <td data-label="Type">Expense</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="action-btn edit">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7">
+                                                </path>
+                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z">
+                                                </path>
+                                            </svg>
+                                        </button>
+                                        <button class="action-btn delete">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <polyline points="3 6 5 6 21 6"></polyline>
+                                                <path
+                                                    d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                                </path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td data-label="Date">2026-02-01</td>
+                                <td data-label="Client">GlobalTech Inc</td>
+                                <td data-label="Description">App Development - Phase 2</td>
+                                <td data-label="Amount" style="color: #10b981; font-weight: 600;">+₹25,000</td>
+                                <td data-label="Type">Income</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="action-btn edit">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7">
+                                                </path>
+                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z">
+                                                </path>
+                                            </svg>
+                                        </button>
+                                        <button class="action-btn delete">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <polyline points="3 6 5 6 21 6"></polyline>
+                                                <path
+                                                    d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                                </path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="mobile-bottom-nav">
+        <div class="bottom-nav-item active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            <span>Home</span>
+        </div>
+        <div class="bottom-nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+            <span>Entries</span>
+        </div>
+        <div class="bottom-nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            <span>Clients</span>
+        </div>
+        <div class="bottom-nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+            <span>Invoices</span>
+        </div>
+        <div class="bottom-nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path
+                    d="M12 1v6m0 6v6m9-9h-6m-6 0H3m15.364 6.364l-4.243-4.243M9.88 9.88l-4.243-4.243m12.727 0l-4.243 4.243M9.88 14.12l-4.243 4.243">
+                </path>
+            </svg>
+            <span>Settings</span>
+        </div>
+    </nav>
+
+    <!-- Floating Action Button -->
+    <button class="mobile-fab">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+    </button>
+
+    <script>
+        // Simple demo interactions
+        document.querySelectorAll('.bottom-nav-item').forEach(item => {
+            item.addEventListener('click', function () {
+                document.querySelectorAll('.bottom-nav-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+
+                const pageName = this.querySelector('span').textContent;
+                document.querySelector('.page-title').textContent = pageName;
+
+                // Haptic feedback
+                if ('vibrate' in navigator) {
+                    navigator.vibrate(10);
+                }
+            });
+        });
+
+        document.querySelector('.mobile-fab').addEventListener('click', function () {
+            alert('FAB clicked! This would open the "Add Entry" form on the actual app.');
+
+            if ('vibrate' in navigator) {
+                navigator.vibrate(15);
+            }
+        });
+
+        // Show mobile UI elements
+        document.getElementById('mobileBottomNav')?.style.setProperty('display', 'flex');
+        document.getElementById('mobileFAB')?.style.setProperty('display', 'flex');
+    </script>
+</body>
+
+</html>
